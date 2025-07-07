@@ -1,4 +1,4 @@
-module github.com/agumiroff/BigTechProject/hw1
+module github.com/agumiroff/BigTechProject
 
 go 1.24.3
 

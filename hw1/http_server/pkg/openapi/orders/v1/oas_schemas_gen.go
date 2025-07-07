@@ -3,8 +3,14 @@
 package orders_v1
 
 import (
+	"fmt"
+
 	"github.com/go-faster/errors"
 )
+
+func (s *GenericErrorStatusCode) Error() string {
+	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
+}
 
 // Ref: #/components/schemas/bad_request_error
 type BadRequestError struct {
@@ -37,6 +43,91 @@ func (s *BadRequestError) SetMessage(val string) {
 func (*BadRequestError) getOrderByIDRes()    {}
 func (*BadRequestError) updateOrderByIDRes() {}
 
+// Ref: #/components/schemas/generic_error
+type GenericError struct {
+	// HTTP-код ошибки.
+	Code OptInt `json:"code"`
+	// Описание ошибки.
+	Message OptString `json:"message"`
+}
+
+// GetCode returns the value of Code.
+func (s *GenericError) GetCode() OptInt {
+	return s.Code
+}
+
+// GetMessage returns the value of Message.
+func (s *GenericError) GetMessage() OptString {
+	return s.Message
+}
+
+// SetCode sets the value of Code.
+func (s *GenericError) SetCode(val OptInt) {
+	s.Code = val
+}
+
+// SetMessage sets the value of Message.
+func (s *GenericError) SetMessage(val OptString) {
+	s.Message = val
+}
+
+// GenericErrorStatusCode wraps GenericError with StatusCode.
+type GenericErrorStatusCode struct {
+	StatusCode int
+	Response   GenericError
+}
+
+// GetStatusCode returns the value of StatusCode.
+func (s *GenericErrorStatusCode) GetStatusCode() int {
+	return s.StatusCode
+}
+
+// GetResponse returns the value of Response.
+func (s *GenericErrorStatusCode) GetResponse() GenericError {
+	return s.Response
+}
+
+// SetStatusCode sets the value of StatusCode.
+func (s *GenericErrorStatusCode) SetStatusCode(val int) {
+	s.StatusCode = val
+}
+
+// SetResponse sets the value of Response.
+func (s *GenericErrorStatusCode) SetResponse(val GenericError) {
+	s.Response = val
+}
+
+// Ref: #/components/schemas/internal_server_error
+type InternalServerError struct {
+	// HTTP code for error.
+	Code int `json:"code"`
+	// Message or error.
+	Message string `json:"message"`
+}
+
+// GetCode returns the value of Code.
+func (s *InternalServerError) GetCode() int {
+	return s.Code
+}
+
+// GetMessage returns the value of Message.
+func (s *InternalServerError) GetMessage() string {
+	return s.Message
+}
+
+// SetCode sets the value of Code.
+func (s *InternalServerError) SetCode(val int) {
+	s.Code = val
+}
+
+// SetMessage sets the value of Message.
+func (s *InternalServerError) SetMessage(val string) {
+	s.Message = val
+}
+
+func (*InternalServerError) getOrderByIDRes()    {}
+func (*InternalServerError) updateOrderByIDRes() {}
+
 // Ref: #/components/schemas/not_found_error
 type NotFoundError struct {
 	// HTTP code for error.
@@ -67,6 +158,52 @@ func (s *NotFoundError) SetMessage(val string) {
 
 func (*NotFoundError) getOrderByIDRes()    {}
 func (*NotFoundError) updateOrderByIDRes() {}
+
+// NewOptInt returns new OptInt with value set to v.
+func NewOptInt(v int) OptInt {
+	return OptInt{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInt is optional int.
+type OptInt struct {
+	Value int
+	Set   bool
+}
+
+// IsSet returns true if OptInt was set.
+func (o OptInt) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInt) Reset() {
+	var v int
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInt) SetTo(v int) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInt) Get() (v int, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInt) Or(d int) int {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
 
 // NewOptNilString returns new OptNilString with value set to v.
 func NewOptNilString(v string) OptNilString {
@@ -125,6 +262,52 @@ func (o OptNilString) Get() (v string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptString returns new OptString with value set to v.
+func NewOptString(v string) OptString {
+	return OptString{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptString is optional string.
+type OptString struct {
+	Value string
+	Set   bool
+}
+
+// IsSet returns true if OptString was set.
+func (o OptString) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptString) Reset() {
+	var v string
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptString) SetTo(v string) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptString) Get() (v string, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptString) Or(d string) string {
 	if v, ok := o.Get(); ok {
 		return v
 	}

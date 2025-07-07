@@ -30,11 +30,3 @@ func (UnimplementedHandler) GetOrderByID(ctx context.Context, params GetOrderByI
 func (UnimplementedHandler) UpdateOrderByID(ctx context.Context, req *Order, params UpdateOrderByIDParams) (r UpdateOrderByIDRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
-
-// NewError creates *GenericErrorStatusCode from error returned by handler.
-//
-// Used for common default response.
-func (UnimplementedHandler) NewError(ctx context.Context, err error) (r *GenericErrorStatusCode) {
-	r = new(GenericErrorStatusCode)
-	return r
-}

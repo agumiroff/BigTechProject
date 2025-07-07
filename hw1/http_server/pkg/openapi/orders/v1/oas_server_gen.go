@@ -20,6 +20,10 @@ type Handler interface {
 	//
 	// PUT /api/orders/v1/{order_id}
 	UpdateOrderByID(ctx context.Context, req *Order, params UpdateOrderByIDParams) (UpdateOrderByIDRes, error)
+	// NewError creates *GenericErrorStatusCode from error returned by handler.
+	//
+	// Used for common default response.
+	NewError(ctx context.Context, err error) *GenericErrorStatusCode
 }
 
 // Server implements http server based on OpenAPI v3 specification and

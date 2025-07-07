@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/go-chi/chi/v5"
 	"log"
 	"net"
 	"net/http"
@@ -13,10 +12,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 
-	ordersV1 "github.com/agumiroff/BigTechProject/hw1/pkg/openapi/orders/v1"
+	ordersV1 "github.com/agumiroff/BigTechProject/hw1/http_server/pkg/openapi/orders/v1"
 )
 
 const (

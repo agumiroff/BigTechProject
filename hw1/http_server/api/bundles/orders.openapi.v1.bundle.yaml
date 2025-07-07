@@ -34,6 +34,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/not_found_error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_server_error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generic_error'
     put:
       summary: Update order data for order ID
       operationId: UpdateOrderByID
@@ -64,6 +76,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/not_found_error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_server_error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generic_error'
 components:
   parameters:
     order_id:
@@ -77,6 +101,15 @@ components:
         maxLength: 100
         example: '412389'
   schemas:
+    generic_error:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: HTTP-код ошибки
+        message:
+          type: string
+          description: Описание ошибки
     order:
       type: object
       required:
@@ -153,6 +186,20 @@ components:
           type: string
           description: message or error
           example: Resource not found
+    internal_server_error:
+      type: object
+      required:
+        - message
+        - code
+      properties:
+        code:
+          type: integer
+          description: HTTP code for error
+          example: 500
+        message:
+          type: string
+          description: message or error
+          example: Internal server error
 x-ogen:
   target: ./hw1/pkg/openapi/orders/v1
   package: orders_v1

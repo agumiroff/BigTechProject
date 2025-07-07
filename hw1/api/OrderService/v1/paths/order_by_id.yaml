@@ -1,2 +1,0 @@
-  parameters:- 
-    - $ref: ../params/id.yaml

@@ -1,0 +1,45 @@
+type: object
+required:
+  - order_uuid
+  - user_uuid
+  - part_uuids
+  - total_price
+  - status
+properties:
+  order_uuid:
+    type: string
+    description: Уникальный идентификатор заказа
+    example: "order-123"
+  user_uuid:
+    type: string
+    description: UUID пользователя
+    example: "user-456"
+  part_uuids:
+    type: array
+    description: Список UUID деталей
+    items:
+      type: string
+    example: ["part-1", "part-2"]
+  total_price:
+    type: number
+    format: double
+    description: Итоговая стоимость
+    example: 1999.99
+  transaction_uuid:
+    type: string
+    nullable: true
+    description: UUID транзакции (если оплачен)
+    example: "txn-789"
+  payment_method:
+    type: string
+    nullable: true
+    description: Способ оплаты (если оплачен)
+    example: "CREDIT_CARD"
+  status:
+    type: string
+    description: Статус заказа
+    enum:
+      - PENDING_PAYMENT
+      - PAID
+      - CANCELLED
+    example: "PAID"

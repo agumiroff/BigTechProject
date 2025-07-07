@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -13,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"BigTechProject/hw1/cmd/pkg/models"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -27,8 +24,6 @@ const (
 )
 
 func main() {
-	storage := models.NewOrderStorage()
-
 	router := chi.NewRouter()
 
 	// Middleware added
@@ -38,10 +33,6 @@ func main() {
 	router.Use(render.SetContentType(render.ContentTypeJSON))
 
 	// Routes
-	router.Route("/api/order_service/v1/order", func(r chi.Router) {
-		r.Get("/{orderId}", getOrderHandler(storage))
-		r.Put("/{orderId}", updateOrderHandler(storage))
-	})
 
 	// Starting server
 	server := &http.Server{
@@ -74,41 +65,4 @@ func main() {
 	}
 
 	log.Printf("Server successfully stopped")
-}
-
-func getOrderHandler(s *models.OrderStorage) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id := getIdFromRequest(w, r)
-		order := s.GetOrder(id)
-		if order == nil {
-			http.Error(w, fmt.Sprintf("Order for id %s not found", id), http.StatusNotFound)
-			return
-		}
-
-		render.JSON(w, r, order)
-	}
-}
-
-func updateOrderHandler(s *models.OrderStorage) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id := getIdFromRequest(w, r)
-		var orderUpdate models.Order
-		if err := json.NewDecoder(r.Body).Decode(&orderUpdate); err != nil {
-			http.Error(w, "invalid request body", http.StatusBadRequest)
-			return
-		}
-
-		s.UpdateOrders(id, &orderUpdate)
-
-		render.JSON(w, r, orderUpdate)
-	}
-}
-
-func getIdFromRequest(w http.ResponseWriter, r *http.Request) string {
-	id := chi.URLParam(r, urlParam)
-	if id == "" {
-		http.Error(w, "id parameter required", http.StatusBadRequest)
-		return ""
-	}
-	return id
 }

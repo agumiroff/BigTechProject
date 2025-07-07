@@ -1,10 +1,10 @@
   openapi: 3.0.3
   info:
-    title: OrderService API
+    title: order_service API
     version: 1.0.0
     description: API для работы с заказами на постройку космических кораблей
   x-ogen:
-   target: ./pkg/openapi/orders/v1
+   target: ./hw1/pkg/openapi/orders/v1
    package: orders_v1
    clean: true
 
@@ -13,5 +13,5 @@
       description: Операции с заказами на постройку космических кораблей
 
   paths:
-    /api/orders/v1/{id}:
+    /api/orders/v1/{order_id}:
       $ref: ./paths/order_by_id.yaml

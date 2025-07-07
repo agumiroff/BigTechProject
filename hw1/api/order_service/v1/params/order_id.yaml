@@ -1,0 +1,9 @@
+name: order_id
+in: path
+required: true
+description: Идентификационный номер ордера который необходимо найти
+schema:
+  type: string
+  minLength: 1
+  maxLength: 100
+  example: "412389"

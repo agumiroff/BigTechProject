@@ -6,8 +6,9 @@ properties:
   code:
     type: integer
     description: HTTP code for error
-    example: 404
+    example: 500
   message:
     type: string
-    description: message for error
-    example: ""
+    description: message or error
+    example: "Internal server error"
+

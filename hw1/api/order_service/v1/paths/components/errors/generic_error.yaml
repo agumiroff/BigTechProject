@@ -1,0 +1,14 @@
+type: object
+required:
+  - message
+  - code
+properties:
+  code:
+    type: integer
+    description: HTTP code for error
+    example: 500
+  message:
+    type: string
+    description: message or error
+    example: "Unexpected error"
+

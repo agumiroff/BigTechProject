@@ -1,4 +1,4 @@
-module BigTechProject
+module github.com/agumiroff/BigTechProject/hw1/cmd/pkg/models
 
 go 1.24.3
 

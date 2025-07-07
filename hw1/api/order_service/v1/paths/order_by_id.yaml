@@ -1,0 +1,57 @@
+  parameters:
+    - $ref: ../params/order_id.yaml
+
+  get:
+    summary: Get order data for order ID
+    operationId: GetOrderByID
+    tags:
+        - order
+    responses:
+        '200':
+            description: Order information successfully retrieved
+            content:
+                application/json:
+                    schema:
+                        $ref: components/order.yaml
+        '404':
+             description: Order information for this id not found
+             content:
+                application/json:
+                    schema:
+                        $ref: components/errors/not_found_error.yaml
+        '400':
+              description: Order data for this id not found
+              content:
+                application/json:
+                    schema:
+                        $ref: components/errors/bad_request_error.yaml
+  put:
+    summary: Update order data for order ID
+    operationId: UpdateOrderByID
+    tags:
+      - order
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: components/order.yaml
+    responses:
+       '200':
+            description: Order information successfully retrieved
+            content:
+                application/json:
+                    schema:
+                        $ref: components/order.yaml
+       '404':
+             description: Order information for this id not found
+             content:
+                application/json:
+                    schema:
+                        $ref: components/errors/not_found_error.yaml
+       '400':
+             description: Bad request - validation error
+             content:
+                application/json:
+                    schema:
+                        $ref: components/errors/bad_request_error.yaml

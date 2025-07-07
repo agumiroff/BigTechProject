@@ -1,0 +1,159 @@
+openapi: 3.0.3
+info:
+  title: order_service API
+  version: 1.0.0
+  description: API для работы с заказами на постройку космических кораблей
+tags:
+  - name: Orders
+    description: Операции с заказами на постройку космических кораблей
+paths:
+  /api/orders/v1/{order_id}:
+    parameters:
+      - $ref: '#/components/parameters/order_id'
+    get:
+      summary: Get order data for order ID
+      operationId: GetOrderByID
+      tags:
+        - order
+      responses:
+        '200':
+          description: Order information successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/order'
+        '400':
+          description: Order data for this id not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bad_request_error'
+        '404':
+          description: Order information for this id not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/not_found_error'
+    put:
+      summary: Update order data for order ID
+      operationId: UpdateOrderByID
+      tags:
+        - order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/order'
+      responses:
+        '200':
+          description: Order information successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/order'
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bad_request_error'
+        '404':
+          description: Order information for this id not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/not_found_error'
+components:
+  parameters:
+    order_id:
+      name: order_id
+      in: path
+      required: true
+      description: Идентификационный номер ордера который необходимо найти
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 100
+        example: '412389'
+  schemas:
+    order:
+      type: object
+      required:
+        - order_uuid
+        - user_uuid
+        - part_uuids
+        - total_price
+        - status
+      properties:
+        order_uuid:
+          type: string
+          description: Уникальный идентификатор заказа
+          example: order-123
+        user_uuid:
+          type: string
+          description: UUID пользователя
+          example: user-456
+        part_uuids:
+          type: array
+          description: Список UUID деталей
+          items:
+            type: string
+          example:
+            - part-1
+            - part-2
+        total_price:
+          type: number
+          format: double
+          description: Итоговая стоимость
+          example: 1999.99
+        transaction_uuid:
+          type: string
+          nullable: true
+          description: UUID транзакции (если оплачен)
+          example: txn-789
+        payment_method:
+          type: string
+          nullable: true
+          description: Способ оплаты (если оплачен)
+          example: CREDIT_CARD
+        status:
+          type: string
+          description: Статус заказа
+          enum:
+            - PENDING_PAYMENT
+            - PAID
+            - CANCELLED
+          example: PAID
+    bad_request_error:
+      type: object
+      required:
+        - message
+        - code
+      properties:
+        code:
+          type: integer
+          description: HTTP code for error
+          example: 400
+        message:
+          type: string
+          description: message or error
+          example: 'Bad request: Invalid parameter format'
+    not_found_error:
+      type: object
+      required:
+        - message
+        - code
+      properties:
+        code:
+          type: integer
+          description: HTTP code for error
+          example: 404
+        message:
+          type: string
+          description: message or error
+          example: Resource not found
+x-ogen:
+  target: ./hw1/pkg/openapi/orders/v1
+  package: orders_v1
+  clean: true

@@ -3,8 +3,6 @@ module github.com/agumiroff/BigTechProject/hw1
 go 1.24.3
 
 require (
-	github.com/go-chi/chi/v5 v5.2.2
-	github.com/go-chi/render v1.0.3
 	github.com/go-faster/errors v0.7.1
 	github.com/go-faster/jx v1.1.0
 	github.com/ogen-go/ogen v1.14.0
@@ -14,7 +12,6 @@ require (
 )
 
 require (
-	github.com/ajg/form v1.5.1 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect

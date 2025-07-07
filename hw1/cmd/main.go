@@ -1,6 +1,7 @@
 package main
 
 import (
+<<<<<<< HEAD
 	"context"
 	"errors"
 	"log"
@@ -14,6 +15,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+=======
+	"time"
+>>>>>>> 35e62b48772a242132a0e1896b7ba38141088bc4
 )
 
 const (
@@ -24,6 +28,7 @@ const (
 )
 
 func main() {
+<<<<<<< HEAD
 	router := chi.NewRouter()
 
 	// Middleware added
@@ -65,4 +70,7 @@ func main() {
 	}
 
 	log.Printf("Server successfully stopped")
+=======
+
+>>>>>>> 35e62b48772a242132a0e1896b7ba38141088bc4
 }

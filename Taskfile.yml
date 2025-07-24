@@ -109,7 +109,7 @@ tasks:
         echo "🔄 Обновление зависимостей в go.work"
         go work sync
         echo "🔄 Обновление зависимостей в go.mod во всех модулях"
-        for mod in {{.MODULES}}; do
+        for mod in {{.MODULES | splitList " "}}; do
           if [ -d "$mod" ]; then
             echo "🔄 Обновление зависимостей в $mod"
             (cd "$mod" && go mod tidy -compat=1.24) || exit 1

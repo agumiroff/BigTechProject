@@ -1,35 +1,18 @@
-package service
+package part
 
 import (
 	"context"
-	"log"
 
-	invServiceV1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
+	"github.com/agumiroff/BigTechProject/inventory/v1/internal/model"
+	"github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/converter"
+	rModel "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/model"
 )
 
-func (s *InvService) GetPart(ctx context.Context, req *invServiceV1.GetPartRequest) (res *invServiceV1.GetPartResponse, err error) {
+func (s *repository) ListParts(ctx context.Context, filter *rModel.PartsFilter) ([]*model.Part, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	id := req.GetUuid()
-	if id == "" {
-		log.Printf("error %d\n", err)
-		return nil, err
-	}
-
-	part := &invServiceV1.GetPartResponse{
-		Part: s.storage[req.GetUuid()],
-	}
-
-	return part, nil
-}
-
-func (s *InvService) ListParts(ctx context.Context, req *invServiceV1.ListPartsRequest) (*invServiceV1.ListPartsResponse, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	filter := req.GetFilter()
-	var result []*invServiceV1.Part
+	var result []*model.Part
 
 	for _, part := range s.storage {
 		// Фильтрация по UUID
@@ -48,7 +31,7 @@ func (s *InvService) ListParts(ctx context.Context, req *invServiceV1.ListPartsR
 		}
 
 		// Фильтрация по Manufacturer.Country
-		if len(filter.ManufacturerCountries) > 0 && !contains(filter.ManufacturerCountries, part.GetManufacturer().GetCountry()) {
+		if len(filter.ManufacturerCountries) > 0 && !contains(filter.ManufacturerCountries, part.Manufacturer.Country) {
 			continue
 		}
 
@@ -57,12 +40,9 @@ func (s *InvService) ListParts(ctx context.Context, req *invServiceV1.ListPartsR
 			continue
 		}
 
-		result = append(result, part)
+		result = append(result, converter.RepoToModel(part))
 	}
-
-	return &invServiceV1.ListPartsResponse{
-		Parts: result,
-	}, nil
+	return result, nil
 }
 
 func contains(list []string, value string) bool {
@@ -74,7 +54,7 @@ func contains(list []string, value string) bool {
 	return false
 }
 
-func containsCategory(list []invServiceV1.Category, value invServiceV1.Category) bool {
+func containsCategory(list []rModel.Category, value rModel.Category) bool {
 	for _, v := range list {
 		if v == value {
 			return true

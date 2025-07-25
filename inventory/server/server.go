@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/agumiroff/BigTechProject/inventory/v1/service"
+	"github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/part"
 	invServiceV1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
 )
 
@@ -25,8 +25,8 @@ func StartGRPCServer() (*grpc.Server, net.Listener, error) {
 
 	s := grpc.NewServer()
 
-	invService := service.NewService()
-	invServiceV1.RegisterInventoryServiceServer(s, invService)
+	repo := repository.NewRepository()
+	invServiceV1.RegisterInventoryServiceServer(s, repo)
 	reflection.Register(s)
 
 	go func() {

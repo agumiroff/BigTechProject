@@ -1,71 +1,80 @@
-package service
+package part
 
 import (
 	"sync"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
+	"github.com/samber/lo"
 
+	rep "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository"
+	model "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/model"
 	invServiceV1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
 )
 
-type InvService struct {
+type repository struct {
 	invServiceV1.UnimplementedInventoryServiceServer
 
 	mu      sync.RWMutex
-	storage map[string]*invServiceV1.Part
+	storage map[string]*model.Part
 }
 
-func NewService() (res *InvService) {
-	service := &InvService{
-		storage: make(map[string]*invServiceV1.Part),
+var _ rep.InvRepository = (*repository)(nil)
+
+func NewRepository() (res *repository) {
+	service := &repository{
+		storage: make(map[string]*model.Part),
 	}
 
 	fillStorage(service)
 	return service
 }
 
-func fillStorage(s *InvService) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func fillStorage(s *repository) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	tags := []string{
 		gofakeit.Word(),
 		gofakeit.BuzzWord(),
 	}
 
-	metadata := map[string]*invServiceV1.Value{
-		"color": {Value: &invServiceV1.Value_StringValue{StringValue: gofakeit.Color()}},
-		"year":  {Value: &invServiceV1.Value_Int64Value{Int64Value: int64(gofakeit.Year())}},
+	metadata := map[string]*model.Value{
+		"color": {
+			StringValue: lo.ToPtr(gofakeit.Color()),
+		},
+		"year": {
+			Int64Value: lo.ToPtr(int64(gofakeit.Year())),
+		},
 	}
 
 	now := time.Now().Unix()
 
 	for i := 0; i < 10; i++ {
-		part := &invServiceV1.Part{
+		part := &model.Part{
 			Uuid:          gofakeit.UUID(),
 			Name:          gofakeit.Name(),
 			Description:   gofakeit.HipsterSentence(5),
 			Price:         gofakeit.Price(10, 1000),
 			StockQuantity: int64(gofakeit.Number(1, 500)),
-			Category:      invServiceV1.Category(1),
-			Dimensions: &invServiceV1.Dimensions{
+			Category:      model.Category(gofakeit.Number(1, 3)),
+			Dimensions: model.Dimensions{
 				Length: gofakeit.Float64Range(10, 200),
 				Width:  gofakeit.Float64Range(10, 200),
 				Height: gofakeit.Float64Range(10, 200),
 				Weight: gofakeit.Float64Range(1, 100),
 			},
-			Manufacturer: &invServiceV1.Manufacturer{
+			Manufacturer: model.Manufacturer{
 				Name:    gofakeit.Company(),
 				Country: gofakeit.Country(),
 				Website: gofakeit.URL(),
 			},
 			Tags:      tags,
 			Metadata:  metadata,
-			CreatedAt: now - 86400, // сутки назад
+			CreatedAt: now - 86400,
 			UpdatedAt: now,
 		}
 
-		s.storage[part.GetUuid()] = part
+		s.storage[part.Uuid] = part
 	}
 }

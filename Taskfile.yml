@@ -6,23 +6,34 @@ vars:
   GOLANGCI_LINT_VERSION: 'v2.1.5'
   GCI_VERSION: 'v0.13.6'
   GOFUMPT_VERSION: 'v0.8.0'
+  BUF_VERSION: '1.53.0'
+  PROTOC_GEN_GO_VERSION: 'v1.36.6'
+  PROTOC_GEN_GO_GRPC_VERSION: 'v1.5.1'
+  OGEN_VERSION: 'v1.12.0'
+  YQ_VERSION: 'v4.45.2'
 
   BIN_DIR: '{{.ROOT_DIR}}/bin'
   GOLANGCI_LINT: '{{.BIN_DIR}}/golangci-lint'
   GCI: '{{.BIN_DIR}}/gci'
   GOFUMPT: '{{.BIN_DIR}}/gofumpt'
-  MODULES: assembly inventory order payment platform iam notification
+  BUF: '{{.BIN_DIR}}/buf'
+  PROTOC_GEN_GO: '{{.BIN_DIR}}/protoc-gen-go'
+  PROTOC_GEN_GO_GRPC: '{{.BIN_DIR}}/protoc-gen-go-grpc'
+  OGEN: '{{.BIN_DIR}}/ogen'
+  YQ: '{{.BIN_DIR}}/yq'
+
+  NODE_MODULES_DIR: '{{.ROOT_DIR}}/node_modules/.bin'
+  REDOCLY: '{{.NODE_MODULES_DIR}}/redocly'
+
+  OPEN_API_WEATHER_V1_BASE: '{{.ROOT_DIR}}/shared/openapi/v1/order.openapi.yaml'
+  OPEN_API_WEATHER_V1_BUNDLE: '{{.ROOT_DIR}}/shared/openapi/v1/bundles/order.openapi.v1.bundle.yaml'
+  OPEN_API_FILES: '{{.ROOT_DIR}}/shared/openapi/v1/bundles'
+
+  MODULES: '{{ or .MODULES "shared payment order inventory" }}'
 
 tasks:
   install-formatters:
     desc: "Устанавливает форматтеры gci и gofumpt в ./bin"
-    summary: |
-      Эта задача проверяет наличие инструментов форматирования кода gofumpt и gci в директории bin.
-      Если инструменты не найдены, они будут автоматически установлены с указанными версиями.
-      
-      Используется:
-        - gofumpt: для форматирования кода Go
-        - gci: для сортировки импортов Go
     cmds:
       - |
         [ -f {{.GOFUMPT}} ] || {
@@ -39,13 +50,6 @@ tasks:
 
   format:
     desc: "Форматирует весь проект gofumpt + gci, исключая mocks"
-    summary: |
-      Форматирует все Go-файлы проекта с использованием gofumpt для стандартизации кода
-      и gci для сортировки импортов, исключая файлы в директориях mocks.
-      
-      Использует инструменты:
-        - gofumpt: для стандартизации форматирования
-        - gci: для сортировки импортов по стандартным группам
     deps: [ install-formatters ]
     cmds:
       - |
@@ -63,17 +67,12 @@ tasks:
         for module in {{.MODULES}}; do
           if [ -d "$module" ]; then
             echo "🎯 Сортируем импорты в $module"
-            find $module -type f -name '*.go' ! -path '*/mocks/*' -exec {{.GCI}} write -s standard -s default -s "prefix(https://github.com/agumiroff/BigTechProject)" {} +
+            find $module -type f -name '*.go' ! -path '*/mocks/*' -exec {{.GCI}} write -s standard -s default -s "prefix(github.com/agumiroff/BigTechProject)" {} +
           fi
         done
 
   install-golangci-lint:
     desc: "Устанавливает golangci-lint в каталог bin"
-    summary: |
-      Проверяет наличие golangci-lint в директории bin.
-      Если инструмент не найден, автоматически устанавливает его через go install.
-      
-      Устанавливаемая версия: {{.GOLANGCI_LINT_VERSION}}
     cmds:
       - |
         [ -f {{.GOLANGCI_LINT}} ] || {
@@ -86,14 +85,6 @@ tasks:
 
   lint:
     desc: "Запускает golangci-lint для всех модулей"
-    summary: |
-      Запускает линтер golangci-lint для всех модулей проекта.
-      Линтер проверяет код на соответствие стандартам качества и лучшим практикам.
-      Проверка включает проверку безопасности через gosec (встроенный в golangci-lint).
-      
-      Зависимости:
-        - install-golangci-lint: автоматически устанавливает линтер
-        - format: форматирует код перед проверкой
     deps: [ install-golangci-lint ]
     vars:
       MODULES: '{{.MODULES}}'
@@ -110,3 +101,124 @@ tasks:
           fi
         done
         exit $ERR
+
+  deps:update:
+    desc: "Обновление зависимостей в go.mod во всех модулях"
+    cmds:
+      - |
+        echo "🔄 Обновление зависимостей в go.work"
+        go work sync
+        echo "🔄 Обновление зависимостей в go.mod во всех модулях"
+        for mod in {{.MODULES | splitList " "}}; do
+          if [ -d "$mod" ]; then
+            echo "🔄 Обновление зависимостей в $mod"
+            (cd "$mod" && go mod tidy -compat=1.24) || exit 1
+          fi
+        done
+
+  install-buf:
+    desc: "Устанавливает Buf в каталог bin"
+    cmds:
+      - |
+        mkdir -p {{.BIN_DIR}}
+        [ -f {{.BUF}} ] || {
+          echo '📦 Устанавливаем buf {{.BUF_VERSION}}...'
+          GOBIN={{.BIN_DIR}} go install github.com/bufbuild/buf/cmd/buf@v{{.BUF_VERSION}}
+        }
+    status:
+      - test -x {{.BUF}}
+
+  proto:install-plugins:
+    desc: "Устанавливает protoc плагины в каталог bin"
+    cmds:
+      - |
+        [ -f {{.PROTOC_GEN_GO}} ] || {
+          echo '📦 Installing protoc-gen-go...'
+          GOBIN={{.BIN_DIR}} go install google.golang.org/protobuf/cmd/protoc-gen-go@{{.PROTOC_GEN_GO_VERSION}}
+        }
+        [ -f {{.PROTOC_GEN_GO_GRPC}} ] || {
+          echo '📦 Installing protoc-gen-go-grpc...'
+          GOBIN={{.BIN_DIR}} go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@{{.PROTOC_GEN_GO_GRPC_VERSION}}
+        }
+
+  proto:lint:
+    deps: [ install-buf, proto:install-plugins ]
+    desc: Проверка .proto-файлов на соответствие стилю
+    dir: shared/proto
+    cmds:
+      - '{{.BUF}} lint'
+
+  proto:gen:
+    deps: [ install-buf, proto:install-plugins, proto:lint ]
+    desc: Генерация Go-кода из .proto
+    dir: shared/proto
+    cmds:
+      - '{{.BUF}} generate'
+
+  redocly-cli:install:
+    desc: Установить локально Redocly CLI
+    cmds:
+      - |
+        [ -f {{.REDOCLY}} ] || {
+          npm ci
+        } || {
+          echo "📦 Устанавливаем redocly-cli..."
+          npm install
+        }
+
+  redocly-cli:weather-v1-bundle:
+    desc: Собрать OpenAPI в один файл через локальный redocly
+    deps: [ redocly-cli:install ]
+    cmds:
+      - '{{.REDOCLY}} bundle {{.OPEN_API_WEATHER_V1_BASE}} -o {{.OPEN_API_WEATHER_V1_BUNDLE}}'
+
+  redocly-cli:bundle:
+    desc: Собрать все схемы OpenAPI в общие файлы через локальный redocly
+    deps: [ redocly-cli:install ]
+    cmds:
+      - task: redocly-cli:weather-v1-bundle
+
+  ogen:install:
+    desc: "Скачивает ogen в папку bin"
+    cmds:
+      - |
+        [ -f {{.OGEN}} ] || {
+          mkdir -p {{.BIN_DIR}}
+          GOBIN={{.BIN_DIR}} go install github.com/ogen-go/ogen/cmd/ogen@{{.OGEN_VERSION}}
+        }
+
+  yq:install:
+    desc: "Устанавливает yq в bin/ при необходимости"
+    cmds:
+      - |
+        [ -f {{.YQ}} ] || {
+          echo '📦 Installing yq...'
+          GOBIN={{.BIN_DIR}} go install github.com/mikefarah/yq/v4@{{.YQ_VERSION}}
+        }
+
+  ogen:gen:
+    desc: "Генерация Go-кода из всех OpenAPI-деклараций с x-ogen"
+    deps: [ ogen:install, yq:install ]
+    cmds:
+      - task: redocly-cli:bundle
+      - |
+        find {{.OPEN_API_FILES}} -name '*.yaml' -o -name '*.yml' | while read -r file; do
+          if [ -f "$file" ] && grep -q 'x-ogen:' "$file"; then
+            echo "🚀 Generating from: $file"
+            target=$({{.YQ}} e '."x-ogen".target' "$file")
+            package=$({{.YQ}} e '."x-ogen".package' "$file")
+            echo "📁 Target: $target"
+            echo "📦 Package: $package"
+            {{.OGEN}} \
+              --target "$target" \
+              --package "$package" \
+              --clean \
+              "$file" || exit 1
+          fi
+        done
+
+  gen:
+    desc: "Генерирует код из всех спецификаций (proto + OpenAPI)"
+    cmds:
+      - task: proto:gen
+      - task: ogen:gen

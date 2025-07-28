@@ -17,14 +17,14 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-# env file
-.env
-/.idea
-/.vscode
-/.cursor
-.DS_Store
+# Go workspace file
+go.work
+go.work.sum
 
-/bin
-node_modules
-/shared/api/bundles/
-/coverage/
+.idea
+.vscode
+.cursor/
+bin/
+bundles/
+node_modules/
+coverage/

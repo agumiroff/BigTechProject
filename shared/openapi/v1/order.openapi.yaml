@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info:
+  title: Order service
+  version: 1.0.0
+  description: Service for ordering spaceship parts
+x-ogen:
+  target: ../workspace/shared/pkg/openapi/v1
+  package: order_v1
+  clean: true
+
+tags:
+  - name: Order service
+    description: Сервис для создания заказов на детали для космических кораблей
+
+paths:
+  /api/v1/orders:
+    $ref: ./paths/orders/create_order/create_order.yaml
+
+  /api/v1/orders/{order_uuid}/pay:
+    $ref: ./paths/orders/pay_order/pay_order.yaml
+
+  /api/v1/orders/{order_uuid}:
+    $ref: ./paths/orders/get_order/get_order.yaml
+
+  /api/v1/orders/{order_uuid}/cancel:
+    $ref: ./paths/orders/cancel_order/cancel_order.yaml
+

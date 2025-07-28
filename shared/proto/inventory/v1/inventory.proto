@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package inventory.v1;
+
+option go_package = "github.com/agumiroff/BigTechProject/hw1/workspace/shared/proto/inventory/v1;inventoryv1";
+
+
+// Структура для запроса GetPart
+message GetPartRequest {
+  string uuid = 1;  // UUID детали
+}
+
+// Структура для ответа GetPart
+message GetPartResponse {
+  Part part = 1;  // Информация о детали
+}
+
+// Перечисление категорий
+enum Category {
+  CATEGORY_UNSPECIFIED = 0;  // Неизвестная категория
+  CATEGORY_ENGINE = 1;   // Двигатель
+  CATEGORY_FUEL = 2;     // Топливо
+  CATEGORY_PORTHOLE = 3; // Иллюминатор
+  CATEGORY_WING = 4;     // Крыло
+}
+
+// Структура для размеров детали
+message Dimensions {
+  double length = 1;  // Длина в см
+  double width = 2;   // Ширина в см
+  double height = 3;  // Высота в см
+  double weight = 4;  // Вес в кг
+}
+
+// Структура для производителя
+message Manufacturer {
+  string name = 1;    // Название производителя
+  string country = 2; // Страна производства
+  string website = 3; // Сайт производителя
+}
+
+// Типы значений для гибких метаданных
+message Value {
+  oneof value {
+    string string_value = 1;
+    int64 int64_value = 2;
+    double double_value = 3;
+    bool bool_value = 4;
+  }
+}
+
+// Структура для детали
+message Part {
+  string uuid = 1;                    // UUID детали
+  string name = 2;                    // Название детали
+  string description = 3;             // Описание
+  double price = 4;                   // Цена
+  int64 stock_quantity = 5;           // Количество на складе
+  Category category = 6;              // Категория
+  Dimensions dimensions = 7;          // Размеры
+  Manufacturer manufacturer = 8;      // Производитель
+  repeated string tags = 9;           // Теги
+  map<string, Value> metadata = 10;   // Метаданные
+  int64 created_at = 11;              // Дата создания
+  int64 updated_at = 12;              // Дата обновления
+}
+
+// Структура для фильтрации деталей
+message PartsFilter {
+  repeated string uuids = 1;                  // Список UUID'ов
+  repeated string names = 2;                  // Список имен
+  repeated Category categories = 3;           // Список категорий
+  repeated string manufacturer_countries = 4;  // Список стран производителей
+  repeated string tags = 5;                   // Список тегов
+}
+
+// Структура для запроса ListParts
+message ListPartsRequest {
+  PartsFilter filter = 1;  // Фильтр для поиска
+}
+
+// Структура для ответа ListParts
+message ListPartsResponse {
+  repeated Part parts = 1;  // Список найденных деталей
+}
+
+// Сервис InventoryService
+service InventoryService {
+  rpc GetPart (GetPartRequest) returns (GetPartResponse);
+  rpc ListParts (ListPartsRequest) returns (ListPartsResponse);
+}

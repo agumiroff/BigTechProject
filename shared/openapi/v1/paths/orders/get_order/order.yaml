@@ -1,0 +1,38 @@
+type: object
+required:
+  - order_uuid
+  - user_uuid
+  - part_uuids
+  - total_price
+  - status
+properties:
+  order_uuid:
+    type: string
+    example: "f3a2b1c0-9876-4321-b123-dfef4321abcd"
+  user_uuid:
+    type: string
+    example: "u1d2f3a4-b567-8901-c234-e5678901fabc"
+  part_uuids:
+    type: array
+    items:
+      type: string
+    example:
+      - "part-uuid-1"
+      - "part-uuid-2"
+  total_price:
+    type: number
+    format: double
+    example: 123.45
+  transaction_uuid:
+    type: string
+    nullable: true
+    example: "tx-uuid-123"
+  payment_method:
+    $ref: '../../components/schemas/payment_method.yaml'
+  status:
+    type: string
+    enum:
+      - PENDING_PAYMENT
+      - PAID
+      - CANCELLED
+    example: PAID

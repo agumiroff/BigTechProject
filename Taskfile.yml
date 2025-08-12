@@ -109,7 +109,7 @@ tasks:
         echo "🔄 Обновление зависимостей в go.work"
         go work sync
         echo "🔄 Обновление зависимостей в go.mod во всех модулях"
-        for mod in {{.MODULES | splitList " "}}; do
+        for mod in {{.MODULES}}; do
           if [ -d "$mod" ]; then
             echo "🔄 Обновление зависимостей в $mod"
             (cd "$mod" && go mod tidy -compat=1.24) || exit 1
@@ -137,88 +137,4 @@ tasks:
           GOBIN={{.BIN_DIR}} go install google.golang.org/protobuf/cmd/protoc-gen-go@{{.PROTOC_GEN_GO_VERSION}}
         }
         [ -f {{.PROTOC_GEN_GO_GRPC}} ] || {
-          echo '📦 Installing protoc-gen-go-grpc...'
-          GOBIN={{.BIN_DIR}} go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@{{.PROTOC_GEN_GO_GRPC_VERSION}}
-        }
-
-  proto:lint:
-    deps: [ install-buf, proto:install-plugins ]
-    desc: Проверка .proto-файлов на соответствие стилю
-    dir: shared/proto
-    cmds:
-      - '{{.BUF}} lint'
-
-  proto:gen:
-    deps: [ install-buf, proto:install-plugins, proto:lint ]
-    desc: Генерация Go-кода из .proto
-    dir: shared/proto
-    cmds:
-      - '{{.BUF}} generate'
-
-  redocly-cli:install:
-    desc: Установить локально Redocly CLI
-    cmds:
-      - |
-        [ -f {{.REDOCLY}} ] || {
-          npm ci
-        } || {
-          echo "📦 Устанавливаем redocly-cli..."
-          npm install
-        }
-
-  redocly-cli:weather-v1-bundle:
-    desc: Собрать OpenAPI в один файл через локальный redocly
-    deps: [ redocly-cli:install ]
-    cmds:
-      - '{{.REDOCLY}} bundle {{.OPEN_API_WEATHER_V1_BASE}} -o {{.OPEN_API_WEATHER_V1_BUNDLE}}'
-
-  redocly-cli:bundle:
-    desc: Собрать все схемы OpenAPI в общие файлы через локальный redocly
-    deps: [ redocly-cli:install ]
-    cmds:
-      - task: redocly-cli:weather-v1-bundle
-
-  ogen:install:
-    desc: "Скачивает ogen в папку bin"
-    cmds:
-      - |
-        [ -f {{.OGEN}} ] || {
-          mkdir -p {{.BIN_DIR}}
-          GOBIN={{.BIN_DIR}} go install github.com/ogen-go/ogen/cmd/ogen@{{.OGEN_VERSION}}
-        }
-
-  yq:install:
-    desc: "Устанавливает yq в bin/ при необходимости"
-    cmds:
-      - |
-        [ -f {{.YQ}} ] || {
-          echo '📦 Installing yq...'
-          GOBIN={{.BIN_DIR}} go install github.com/mikefarah/yq/v4@{{.YQ_VERSION}}
-        }
-
-  ogen:gen:
-    desc: "Генерация Go-кода из всех OpenAPI-деклараций с x-ogen"
-    deps: [ ogen:install, yq:install ]
-    cmds:
-      - task: redocly-cli:bundle
-      - |
-        find {{.OPEN_API_FILES}} -name '*.yaml' -o -name '*.yml' | while read -r file; do
-          if [ -f "$file" ] && grep -q 'x-ogen:' "$file"; then
-            echo "🚀 Generating from: $file"
-            target=$({{.YQ}} e '."x-ogen".target' "$file")
-            package=$({{.YQ}} e '."x-ogen".package' "$file")
-            echo "📁 Target: $target"
-            echo "📦 Package: $package"
-            {{.OGEN}} \
-              --target "$target" \
-              --package "$package" \
-              --clean \
-              "$file" || exit 1
-          fi
-        done
-
-  gen:
-    desc: "Генерирует код из всех спецификаций (proto + OpenAPI)"
-    cmds:
-      - task: proto:gen
-      - task: ogen:gen
+          echo '📦 Installing proto

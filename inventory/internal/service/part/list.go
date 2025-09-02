@@ -2,13 +2,14 @@ package part
 
 import (
 	"context"
-	"github.com/agumiroff/BigTechProject/inventory/v1/internal/model"
-	rModel "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/model"
 	"log"
+
+	"github.com/agumiroff/BigTechProject/inventory/v1/internal/model"
+	rConverter "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/converter"
 )
 
-func (s *service) LitParts(ctx context.Context, f *rModel.PartsFilter) (res []*model.Part, err error) {
-	part, err := s.Repo.ListParts(ctx, f)
+func (s *service) ListParts(ctx context.Context, f *model.PartsFilter) (res []*model.Part, err error) {
+	part, err := s.Repo.ListParts(ctx, rConverter.FilterToRepo(f))
 	if err != nil {
 		log.Printf("Part not found: %d", err)
 		return []*model.Part{}, err

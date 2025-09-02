@@ -1,7 +1,8 @@
-package part
+package repository
 
 import (
 	"context"
+	"slices"
 
 	"github.com/agumiroff/BigTechProject/inventory/v1/internal/model"
 	"github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/converter"
@@ -15,27 +16,22 @@ func (s *repository) ListParts(ctx context.Context, filter *rModel.PartsFilter) 
 	var result []*model.Part
 
 	for _, part := range s.storage {
-		// Фильтрация по UUID
 		if len(filter.Uuids) > 0 && !contains(filter.Uuids, part.Uuid) {
 			continue
 		}
 
-		// Фильтрация по Name
 		if len(filter.Names) > 0 && !contains(filter.Names, part.Name) {
 			continue
 		}
 
-		// Фильтрация по Category
 		if len(filter.Categories) > 0 && !containsCategory(filter.Categories, part.Category) {
 			continue
 		}
 
-		// Фильтрация по Manufacturer.Country
 		if len(filter.ManufacturerCountries) > 0 && !contains(filter.ManufacturerCountries, part.Manufacturer.Country) {
 			continue
 		}
 
-		// Фильтрация по Tags (логическое ИЛИ: хотя бы один тег должен совпасть)
 		if len(filter.Tags) > 0 && !hasAnyTag(part.Tags, filter.Tags) {
 			continue
 		}
@@ -46,21 +42,11 @@ func (s *repository) ListParts(ctx context.Context, filter *rModel.PartsFilter) 
 }
 
 func contains(list []string, value string) bool {
-	for _, v := range list {
-		if v == value {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(list, value)
 }
 
 func containsCategory(list []rModel.Category, value rModel.Category) bool {
-	for _, v := range list {
-		if v == value {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(list, value)
 }
 
 func hasAnyTag(partTags, filterTags []string) bool {

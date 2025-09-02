@@ -10,7 +10,7 @@ import (
 func (s *service) GetPart(ctx context.Context, uuid string) (res *model.Part, err error) {
 	m, err := s.Repo.GetPart(ctx, uuid)
 	if err != nil {
-		log.Printf("UUID is empty %d", err)
+		log.Printf("failed to get part: %v", err)
 		return &model.Part{}, err
 	}
 

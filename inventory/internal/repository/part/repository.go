@@ -1,4 +1,4 @@
-package part
+package repository
 
 import (
 	"sync"
@@ -9,12 +9,9 @@ import (
 
 	rep "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository"
 	model "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/model"
-	invServiceV1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
 )
 
 type repository struct {
-	invServiceV1.UnimplementedInventoryServiceServer
-
 	mu      sync.RWMutex
 	storage map[string]*model.Part
 }
@@ -57,7 +54,7 @@ func fillStorage(s *repository) {
 			Description:   gofakeit.HipsterSentence(5),
 			Price:         gofakeit.Price(10, 1000),
 			StockQuantity: int64(gofakeit.Number(1, 500)),
-			Category:      model.Category(gofakeit.Number(1, 3)),
+			Category:      model.CategoryEngine, // #nosec G115
 			Dimensions: model.Dimensions{
 				Length: gofakeit.Float64Range(10, 200),
 				Width:  gofakeit.Float64Range(10, 200),

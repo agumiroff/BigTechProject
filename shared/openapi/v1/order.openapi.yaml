@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Order service
+  title: Order client
   version: 1.0.0
   description: Service for ordering spaceship parts
 x-ogen:
@@ -9,7 +9,7 @@ x-ogen:
   clean: true
 
 tags:
-  - name: Order service
+  - name: Order client
     description: Сервис для создания заказов на детали для космических кораблей
 
 paths:

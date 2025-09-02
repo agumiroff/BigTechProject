@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,20 +14,21 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	invServer "github.com/agumiroff/BigTechProject/inventory/v1/server"
-	"github.com/agumiroff/BigTechProject/order/v1/handler"
+	ExRepo "github.com/agumiroff/BigTechProject/order/v1/external/repository/order"
+	"github.com/agumiroff/BigTechProject/order/v1/internal/api/v1"
+	handler "github.com/agumiroff/BigTechProject/order/v1/internal/handler/order"
+	InRepo "github.com/agumiroff/BigTechProject/order/v1/internal/repository/order"
+	serv "github.com/agumiroff/BigTechProject/order/v1/internal/service/order"
 	orderServer "github.com/agumiroff/BigTechProject/order/v1/server"
 	payServer "github.com/agumiroff/BigTechProject/payment/v1/server"
-	InvV1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
-	PayV1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/payment/v1"
 )
 
 const (
 	invServiceAddress = "localhost:50051"
 	payServiceAddress = "localhost:50052"
-	address           = "localhost"
-	port              = 800
+	port              = 8000
 	readHeaderTimeout = 5 * time.Second
-	shutdownTimeout   = 10 * time.Second
+	shutdownTimeout   = 109 * time.Second
 )
 
 func dialGRPC(address string) (conn *grpc.ClientConn) {
@@ -50,31 +50,18 @@ func closeConn(name string, conn *grpc.ClientConn) {
 	}
 }
 
-func startGRPCServer(name string, constructor func() (*grpc.Server, net.Listener, error)) {
-	server, lis, err := constructor()
-	if err != nil {
-		log.Fatalf("❌ Ошибка запуска %s GRPC сервера: %v", name, err)
-	}
-	defer func(lis net.Listener) {
-		err := lis.Close()
-		if err != nil {
-			log.Printf("Failed to close %s server listener %d\n", name, err)
-		}
-	}(lis)
-	log.Printf("✅ %s gRPC сервер запущен", name)
-	if err := server.Serve(lis); err != nil {
-		log.Printf("❌ %s server serve error: %v", name, err)
-	}
+func startGRPCServer(consructor func()) {
+	consructor()
 }
 
 func main() {
 	// --- gRPC серверы: INVENTORY и PAYMENT ---
 	go func() {
-		startGRPCServer("inventory", invServer.StartGRPCServer)
+		startGRPCServer(invServer.StartGRPCServer)
 	}()
 
 	go func() {
-		startGRPCServer("payment", payServer.StartGRPCServer)
+		startGRPCServer(payServer.StartGRPCServer)
 	}()
 
 	// --- gRPC клиенты ---
@@ -84,9 +71,11 @@ func main() {
 	payConn := dialGRPC(payServiceAddress)
 	defer closeConn("Payment Service", payConn)
 
-	invClient := InvV1.NewInventoryServiceClient(invConn)
-	payClient := PayV1.NewPaymentServiceClient(payConn)
-	h := handler.NewOrderHandler(invClient, payClient)
+	inRepo := InRepo.NewRepository()
+	exRepo := ExRepo.NewRepository(invConn, payConn)
+	service := serv.NewService(inRepo, exRepo)
+	api := api.NewAPI(service)
+	h := handler.NewHandler(api)
 
 	// --- HTTP сервер ---
 	server, err := orderServer.StartHTTPServer(h, readHeaderTimeout, port)

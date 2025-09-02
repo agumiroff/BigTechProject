@@ -1,0 +1,21 @@
+with-expecter: true
+outpkg: mocks
+dir: "{{.InterfaceDir}}/mocks"
+filename: "mock_{{.InterfaceNameSnake}}.go"
+mockname: "{{.InterfaceName}}"
+issue-845-fix: true
+
+packages:
+  github.com/agumiroff/BigTechProject/inventory/v1:
+    config:
+      all: true
+      recursive: true
+  github.com/agumiroff/BigTechProject/order/v1:
+    config:
+      all: true
+      recursive: true
+  github.com/agumiroff/BigTechProject/payment/v1:
+    config:
+      all: true
+      recursive: true
+  # добавляй сюда все остальные go-модули

@@ -5,15 +5,16 @@ import (
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
 	rModel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
+	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
 func (r *repository) UpdateOrder(ctx context.Context, m *model.Order) error {
 	if m == nil {
-		return rModel.ErrUpdateOrderFailed
+		return apperrors.ErrInvalidRequest
 	}
 
 	if m.OrderUUID == "" {
-		return rModel.ErrInvalidOrderUUID
+		return apperrors.ErrInvalidRequest
 	}
 
 	r.mu.Lock()
@@ -21,16 +22,16 @@ func (r *repository) UpdateOrder(ctx context.Context, m *model.Order) error {
 
 	existing, exists := r.storage[m.OrderUUID]
 	if !exists {
-		return rModel.ErrOrderNotFound
+		return apperrors.ErrNotFound
 	}
 
 	if existing.Status == rModel.OrderStatusCANCELLED {
-		return rModel.ErrOrderAlreadyCancelled
+		return apperrors.ErrForbidden
 	}
 
 	if existing.Status == rModel.OrderStatus(model.OrderStatusPAID) &&
 		m.Status != model.OrderStatusCANCELLED {
-		return rModel.ErrOrderAlreadyPaid
+		return apperrors.ErrForbidden
 	}
 
 	r.storage[m.OrderUUID] = &rModel.Order{

@@ -8,16 +8,17 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
-	rModel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/repository/order"
+	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
 func TestUpdateOrder_Success(t *testing.T) {
 	// Arrange
-	repo := order.NewRepository()
 	ctx := context.Background()
+	repo := order.NewRepository()
 	testOrder := newTestOrder()
-	repo.CreateOrder(testOrder)
+	_, err := repo.CreateOrder(ctx, testOrder)
+	require.NoError(t, err)
 
 	updatedOrder := &model.Order{
 		OrderUUID:  testOrder.OrderUUID,
@@ -28,24 +29,24 @@ func TestUpdateOrder_Success(t *testing.T) {
 	}
 
 	// Act
-	err := repo.UpdateOrder(ctx, updatedOrder)
+	err = repo.UpdateOrder(ctx, updatedOrder)
 
 	// Assert
 	require.NoError(t, err)
 
 	// Verify storage
-	stored, err := repo.Get(testOrder.OrderUUID)
+	stored, err := repo.Get(ctx, testOrder.OrderUUID)
 	require.NoError(t, err)
 	require.NotNil(t, stored)
 	assert.Equal(t, updatedOrder.UserUUID, stored.UserUUID)
 	assert.Equal(t, updatedOrder.PartUUIDs, stored.PartUUIDs)
-	assert.Equal(t, rModel.OrderStatus(updatedOrder.Status), stored.Status)
+	assert.Equal(t, model.OrderStatus(updatedOrder.Status), model.OrderStatus(stored.Status))
 }
 
 func TestUpdateOrder_NotFound(t *testing.T) {
 	// Arrange
-	repo := order.NewRepository()
 	ctx := context.Background()
+	repo := order.NewRepository()
 	testOrder := &model.Order{
 		OrderUUID:  "non-existent-uuid",
 		UserUUID:   "test-user",
@@ -59,26 +60,26 @@ func TestUpdateOrder_NotFound(t *testing.T) {
 
 	// Assert
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, rModel.ErrOrderNotFound)
+	assert.ErrorIs(t, err, apperrors.ErrNotFound)
 }
 
 func TestUpdateOrder_NilOrder(t *testing.T) {
 	// Arrange
-	repo := order.NewRepository()
 	ctx := context.Background()
+	repo := order.NewRepository()
 
 	// Act
 	err := repo.UpdateOrder(ctx, nil)
 
 	// Assert
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, rModel.ErrUpdateOrderFailed)
+	assert.ErrorIs(t, err, apperrors.ErrInvalidRequest)
 }
 
 func TestUpdateOrder_EmptyUUID(t *testing.T) {
 	// Arrange
-	repo := order.NewRepository()
 	ctx := context.Background()
+	repo := order.NewRepository()
 	testOrder := &model.Order{
 		UserUUID:   "test-user",
 		PartUUIDs:  []string{"part1"},
@@ -91,16 +92,17 @@ func TestUpdateOrder_EmptyUUID(t *testing.T) {
 
 	// Assert
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, rModel.ErrInvalidOrderUUID)
+	assert.ErrorIs(t, err, apperrors.ErrInvalidRequest)
 }
 
 func TestUpdateOrder_CancelledOrder(t *testing.T) {
 	// Arrange
-	repo := order.NewRepository()
 	ctx := context.Background()
+	repo := order.NewRepository()
 	testOrder := newTestOrder()
 	testOrder.Status = model.OrderStatusCANCELLED
-	repo.CreateOrder(testOrder)
+	_, err := repo.CreateOrder(ctx, testOrder)
+	require.NoError(t, err)
 
 	updateReq := &model.Order{
 		OrderUUID:  testOrder.OrderUUID,
@@ -111,14 +113,14 @@ func TestUpdateOrder_CancelledOrder(t *testing.T) {
 	}
 
 	// Act
-	err := repo.UpdateOrder(ctx, updateReq)
+	err = repo.UpdateOrder(ctx, updateReq)
 
 	// Assert
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, rModel.ErrOrderAlreadyCancelled)
+	assert.ErrorIs(t, err, apperrors.ErrForbidden)
 
 	// Verify order wasn't modified
-	stored, err := repo.Get(testOrder.OrderUUID)
+	stored, err := repo.Get(ctx, testOrder.OrderUUID)
 	require.NoError(t, err)
-	assert.Equal(t, rModel.OrderStatusCANCELLED, stored.Status)
+	assert.Equal(t, model.OrderStatusCANCELLED, model.OrderStatus(stored.Status))
 }

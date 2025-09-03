@@ -7,7 +7,7 @@ import (
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
-func (r *repository) DeleteOrder(ctx context.Context, uuid string) error {
+func (r *repository) CancelOrder(ctx context.Context, uuid string) error {
 	if uuid == "" {
 		return apperrors.ErrInvalidRequest
 	}
@@ -15,15 +15,21 @@ func (r *repository) DeleteOrder(ctx context.Context, uuid string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	existing, exists := r.storage[uuid]
+	order, exists := r.storage[uuid]
 	if !exists {
 		return apperrors.ErrNotFound
 	}
 
-	if existing.Status == model.OrderStatusCANCELLED {
+	if order.Status == model.OrderStatusCANCELLED {
 		return apperrors.ErrForbidden
 	}
 
-	delete(r.storage, uuid)
+	if order.Status == model.OrderStatusPAID {
+		return apperrors.ErrForbidden
+	}
+
+	order.Status = model.OrderStatusCANCELLED
+	r.storage[uuid] = order
+
 	return nil
 }

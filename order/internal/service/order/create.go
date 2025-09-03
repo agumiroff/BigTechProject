@@ -57,7 +57,11 @@ func (s *service) CreateOrder(ctx context.Context, req *model.CreateOrderRequest
 		Status:     model.OrderStatusPENDINGPAYMENT,
 	}
 
-	response := s.Repo.CreateOrder(order)
+	response, err := s.Repo.CreateOrder(ctx, order)
+	if err != nil {
+		log.Printf("Failed to create order: %v", err)
+		return nil, err
+	}
 
 	log.Printf("Order created uuid: %s\n, sum: %v\n", uuid, sum)
 

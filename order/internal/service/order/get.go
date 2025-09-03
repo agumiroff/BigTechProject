@@ -9,11 +9,11 @@ import (
 )
 
 func (s *service) GetOrder(ctx context.Context, uuid string) (*model.Order, error) {
-	order, err := s.Repo.Get(uuid)
+	order, err := s.Repo.Get(ctx, uuid)
 	if err != nil {
 		log.Printf("failed to get order %v: %v", uuid, err)
-		return &model.Order{}, err
+		return nil, err
 	}
 
-	return converter.RepoOrderToModel(order), nil
+	return converter.ToModelOrder(order), nil
 }

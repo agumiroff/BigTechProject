@@ -130,8 +130,8 @@ func (_c *OrderAPI_CreateOrder_Call) Run(run func(ctx context.Context, req *orde
 	return _c
 }
 
-func (_c *OrderAPI_CreateOrder_Call) Return(res *order_v1.CreateOrderResponse, err error) *OrderAPI_CreateOrder_Call {
-	_c.Call.Return(res, err)
+func (_c *OrderAPI_CreateOrder_Call) Return(_a0 *order_v1.CreateOrderResponse, _a1 error) *OrderAPI_CreateOrder_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
@@ -140,9 +140,9 @@ func (_c *OrderAPI_CreateOrder_Call) RunAndReturn(run func(context.Context, *ord
 	return _c
 }
 
-// GetOrder provides a mock function with given fields: ctx, req
-func (_m *OrderAPI) GetOrder(ctx context.Context, req order_v1.GetOrderByUuidParams) (*order_v1.Order, error) {
-	ret := _m.Called(ctx, req)
+// GetOrder provides a mock function with given fields: ctx, params
+func (_m *OrderAPI) GetOrder(ctx context.Context, params order_v1.GetOrderByUuidParams) (*order_v1.Order, error) {
+	ret := _m.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetOrder")
@@ -151,10 +151,10 @@ func (_m *OrderAPI) GetOrder(ctx context.Context, req order_v1.GetOrderByUuidPar
 	var r0 *order_v1.Order
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, order_v1.GetOrderByUuidParams) (*order_v1.Order, error)); ok {
-		return rf(ctx, req)
+		return rf(ctx, params)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, order_v1.GetOrderByUuidParams) *order_v1.Order); ok {
-		r0 = rf(ctx, req)
+		r0 = rf(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*order_v1.Order)
@@ -162,7 +162,7 @@ func (_m *OrderAPI) GetOrder(ctx context.Context, req order_v1.GetOrderByUuidPar
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, order_v1.GetOrderByUuidParams) error); ok {
-		r1 = rf(ctx, req)
+		r1 = rf(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -177,20 +177,20 @@ type OrderAPI_GetOrder_Call struct {
 
 // GetOrder is a helper method to define mock.On call
 //   - ctx context.Context
-//   - req order_v1.GetOrderByUuidParams
-func (_e *OrderAPI_Expecter) GetOrder(ctx interface{}, req interface{}) *OrderAPI_GetOrder_Call {
-	return &OrderAPI_GetOrder_Call{Call: _e.mock.On("GetOrder", ctx, req)}
+//   - params order_v1.GetOrderByUuidParams
+func (_e *OrderAPI_Expecter) GetOrder(ctx interface{}, params interface{}) *OrderAPI_GetOrder_Call {
+	return &OrderAPI_GetOrder_Call{Call: _e.mock.On("GetOrder", ctx, params)}
 }
 
-func (_c *OrderAPI_GetOrder_Call) Run(run func(ctx context.Context, req order_v1.GetOrderByUuidParams)) *OrderAPI_GetOrder_Call {
+func (_c *OrderAPI_GetOrder_Call) Run(run func(ctx context.Context, params order_v1.GetOrderByUuidParams)) *OrderAPI_GetOrder_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(order_v1.GetOrderByUuidParams))
 	})
 	return _c
 }
 
-func (_c *OrderAPI_GetOrder_Call) Return(res *order_v1.Order, err error) *OrderAPI_GetOrder_Call {
-	_c.Call.Return(res, err)
+func (_c *OrderAPI_GetOrder_Call) Return(_a0 *order_v1.Order, _a1 error) *OrderAPI_GetOrder_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 

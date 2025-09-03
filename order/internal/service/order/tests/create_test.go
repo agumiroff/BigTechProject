@@ -48,7 +48,7 @@ func TestCreateOrder_Success(t *testing.T) {
 	}, nil)
 
 	// Mock internal repo response
-	mockRepo.On("CreateOrder", mock.MatchedBy(func(order *model.Order) bool {
+	mockRepo.On("CreateOrder", mock.Anything, mock.MatchedBy(func(order *model.Order) bool {
 		return order.UserUUID == req.UserUUID &&
 			len(order.PartUUIDs) == len(req.PartUUIDs) &&
 			order.TotalPrice == 125.0 &&
@@ -56,7 +56,7 @@ func TestCreateOrder_Success(t *testing.T) {
 	})).Return(&model.CreateOrderResponse{
 		OrderUUID:  "test-uuid",
 		TotalPrice: 125.0,
-	})
+	}, nil)
 
 	// Act
 	resp, err := svc.CreateOrder(ctx, req)

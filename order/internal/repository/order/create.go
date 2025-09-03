@@ -1,25 +1,32 @@
 package order
 
 import (
+	"context"
+
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
 	rModel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
+	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
-func (r *repository) CreateOrder(req *model.Order) *model.CreateOrderResponse {
+func (r *repository) CreateOrder(ctx context.Context, req *model.Order) (*model.CreateOrderResponse, error) {
 	if req == nil {
-		return nil
+		return nil, apperrors.ErrInvalidRequest
 	}
 
 	if req.OrderUUID == "" {
-		return nil
+		return nil, apperrors.ErrInvalidRequest
 	}
 
 	if req.UserUUID == "" || len(req.PartUUIDs) == 0 {
-		return nil
+		return nil, apperrors.ErrInvalidRequest
 	}
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	if _, exists := r.storage[req.OrderUUID]; exists {
+		return nil, apperrors.ErrAlreadyExists
+	}
 
 	r.storage[req.OrderUUID] = &rModel.Order{
 		UserUUID:   req.UserUUID,
@@ -32,5 +39,5 @@ func (r *repository) CreateOrder(req *model.Order) *model.CreateOrderResponse {
 	return &model.CreateOrderResponse{
 		OrderUUID:  req.OrderUUID,
 		TotalPrice: req.TotalPrice,
-	}
+	}, nil
 }

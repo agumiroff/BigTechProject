@@ -7,14 +7,14 @@ import (
 	paymentv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/payment/v1"
 )
 
-func ProtoOrderToModel(req *OrderV1.CreateOrderRequest) *model.CreateOrderRequest {
+func ToModelCreateOrderRequest(req *OrderV1.CreateOrderRequest) *model.CreateOrderRequest {
 	return &model.CreateOrderRequest{
 		UserUUID:  req.GetUserUUID(),
 		PartUUIDs: req.GetPartUuids(),
 	}
 }
 
-func ModelOrderToRepo(m *model.Order) *rModel.Order {
+func ToRepoOrder(m *model.Order) *rModel.Order {
 	return &rModel.Order{
 		OrderUUID:       m.OrderUUID,
 		UserUUID:        m.UserUUID,
@@ -26,7 +26,7 @@ func ModelOrderToRepo(m *model.Order) *rModel.Order {
 	}
 }
 
-func ModelOrderToProto(m *model.Order) *OrderV1.Order {
+func ToProtoOrder(m *model.Order) *OrderV1.Order {
 	return &OrderV1.Order{
 		OrderUUID:       m.OrderUUID,
 		UserUUID:        m.UserUUID,
@@ -38,7 +38,7 @@ func ModelOrderToProto(m *model.Order) *OrderV1.Order {
 	}
 }
 
-func RepoOrderToModel(m *rModel.Order) *model.Order {
+func ToModelOrder(m *rModel.Order) *model.Order {
 	return &model.Order{
 		OrderUUID:       m.OrderUUID,
 		UserUUID:        m.UserUUID,
@@ -50,7 +50,7 @@ func RepoOrderToModel(m *rModel.Order) *model.Order {
 	}
 }
 
-func PaymentMethodToProto(m *model.PaymentMethod) paymentv1.PaymentMethod {
+func ToProtoPaymentMethod(m *model.PaymentMethod) paymentv1.PaymentMethod {
 	switch *m {
 	case model.PaymentMethodSBP:
 		return paymentv1.PaymentMethod_PAYMENT_METHOD_SBP
@@ -63,7 +63,7 @@ func PaymentMethodToProto(m *model.PaymentMethod) paymentv1.PaymentMethod {
 	}
 }
 
-func mapPaymentMethod(method OrderV1.PaymentMethod) model.PaymentMethod {
+func ToModelPaymentMethod(method OrderV1.PaymentMethod) model.PaymentMethod {
 	switch method {
 	case OrderV1.PaymentMethodCARD:
 		return model.PaymentMethodCARD
@@ -78,14 +78,14 @@ func mapPaymentMethod(method OrderV1.PaymentMethod) model.PaymentMethod {
 	}
 }
 
-func ProtoOrderModelToModel(m *OrderV1.Order) *model.Order {
+func ToModelOrderFromProto(m *OrderV1.Order) *model.Order {
 	return &model.Order{
 		OrderUUID:       m.OrderUUID,
 		UserUUID:        m.UserUUID,
 		PartUUIDs:       m.PartUuids,
 		TotalPrice:      m.TotalPrice,
 		TransactionUUID: m.TransactionUUID.Value,
-		PaymentMethod:   mapPaymentMethod(m.PaymentMethod.Value),
+		PaymentMethod:   ToModelPaymentMethod(m.PaymentMethod.Value),
 		Status:          model.OrderStatus(m.Status),
 	}
 }

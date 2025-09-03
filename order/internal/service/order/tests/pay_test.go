@@ -11,8 +11,8 @@ import (
 	mockex "github.com/agumiroff/BigTechProject/order/v1/external/repository/mocks"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/repository/mocks"
-	rModel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/service/order"
+	"github.com/agumiroff/BigTechProject/shared/apperrors"
 	paymentv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/payment/v1"
 )
 
@@ -31,12 +31,12 @@ func TestPayOrder_Success(t *testing.T) {
 		PaymentMethod: model.PaymentMethodCARD,
 	}
 
-	existingOrder := &rModel.Order{
+	existingOrder := &model.Order{
 		OrderUUID:  orderUUID,
 		UserUUID:   "test-user",
 		PartUUIDs:  []string{"part1"},
 		TotalPrice: 100.0,
-		Status:     rModel.OrderStatusPENDINGPAYMENT,
+		Status:     model.OrderStatusPENDINGPAYMENT,
 	}
 
 	// Mock payment service response
@@ -50,7 +50,7 @@ func TestPayOrder_Success(t *testing.T) {
 	}, nil)
 
 	// Mock get order
-	mockRepo.On("Get", orderUUID).Return(existingOrder, nil)
+	mockRepo.On("Get", ctx, orderUUID).Return(existingOrder, nil)
 
 	// Mock update order
 	mockRepo.On("UpdateOrder", ctx, mock.MatchedBy(func(order *model.Order) bool {
@@ -130,14 +130,14 @@ func TestPayOrder_OrderNotFound(t *testing.T) {
 	}, nil)
 
 	// Mock order not found
-	mockRepo.On("Get", orderUUID).Return(nil, rModel.ErrOrderNotFound)
+	mockRepo.On("Get", ctx, orderUUID).Return(nil, apperrors.ErrNotFound)
 
 	// Act
 	resp, err := svc.PayOrder(ctx, req)
 
 	// Assert
 	require.Error(t, err)
-	require.ErrorIs(t, err, rModel.ErrOrderNotFound)
+	require.ErrorIs(t, err, apperrors.ErrNotFound)
 	require.Equal(t, &model.PayOrderResponse{}, resp)
 
 	mockRepo.AssertExpectations(t)
@@ -159,9 +159,9 @@ func TestPayOrder_UpdateError(t *testing.T) {
 		PaymentMethod: model.PaymentMethodCARD,
 	}
 
-	existingOrder := &rModel.Order{
+	existingOrder := &model.Order{
 		OrderUUID: orderUUID,
-		Status:    rModel.OrderStatusPENDINGPAYMENT,
+		Status:    model.OrderStatusPENDINGPAYMENT,
 	}
 
 	expectedErr := errors.New("update error")

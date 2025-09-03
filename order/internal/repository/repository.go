@@ -8,8 +8,9 @@ import (
 )
 
 type OrderRepository interface {
-	CreateOrder(req *model.Order) (res *model.CreateOrderResponse)
-	Get(uuid string) (*rModel.Order, error)
-	UpdateOrder(ctx context.Context, m *model.Order) error
-	DeleteOrder(uuid string) error
+	CreateOrder(ctx context.Context, order *model.Order) (*model.CreateOrderResponse, error)
+	Get(ctx context.Context, uuid string) (*rModel.Order, error)
+	UpdateOrder(ctx context.Context, order *model.Order) error
+	DeleteOrder(ctx context.Context, uuid string) error
+	CancelOrder(ctx context.Context, uuid string) error
 }

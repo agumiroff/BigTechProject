@@ -22,6 +22,65 @@ func (_m *PaymentRepository) EXPECT() *PaymentRepository_Expecter {
 	return &PaymentRepository_Expecter{mock: &_m.Mock}
 }
 
+// GetPayment provides a mock function with given fields: ctx, uuid
+func (_m *PaymentRepository) GetPayment(ctx context.Context, uuid string) (*model.Payment, error) {
+	ret := _m.Called(ctx, uuid)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetPayment")
+	}
+
+	var r0 *model.Payment
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*model.Payment, error)); ok {
+		return rf(ctx, uuid)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *model.Payment); ok {
+		r0 = rf(ctx, uuid)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.Payment)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, uuid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// PaymentRepository_GetPayment_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPayment'
+type PaymentRepository_GetPayment_Call struct {
+	*mock.Call
+}
+
+// GetPayment is a helper method to define mock.On call
+//   - ctx context.Context
+//   - uuid string
+func (_e *PaymentRepository_Expecter) GetPayment(ctx interface{}, uuid interface{}) *PaymentRepository_GetPayment_Call {
+	return &PaymentRepository_GetPayment_Call{Call: _e.mock.On("GetPayment", ctx, uuid)}
+}
+
+func (_c *PaymentRepository_GetPayment_Call) Run(run func(ctx context.Context, uuid string)) *PaymentRepository_GetPayment_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *PaymentRepository_GetPayment_Call) Return(_a0 *model.Payment, _a1 error) *PaymentRepository_GetPayment_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *PaymentRepository_GetPayment_Call) RunAndReturn(run func(context.Context, string) (*model.Payment, error)) *PaymentRepository_GetPayment_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // PayOrder provides a mock function with given fields: ctx, p
 func (_m *PaymentRepository) PayOrder(ctx context.Context, p *model.Payment) (string, error) {
 	ret := _m.Called(ctx, p)

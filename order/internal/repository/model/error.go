@@ -1,26 +1,15 @@
 package model
 
-import "errors"
+// All domain-specific errors have been moved to shared/apperrors
+// This file is kept for backward compatibility until all references are updated
+import "github.com/agumiroff/BigTechProject/shared/apperrors"
 
 var (
-	// ErrOrderNotFound возвращается, когда заказ с заданным UUID не найден в БД.
-	ErrOrderNotFound = errors.New("order not found")
-
-	// ErrOrderAlreadyCancelled возвращается, если заказ уже был отменён.
-	ErrOrderAlreadyCancelled = errors.New("order already cancelled")
-
-	// ErrOrderAlreadyPaid возвращается, если заказ уже был оплачен.
-	ErrOrderAlreadyPaid = errors.New("order already paid")
-
-	// ErrCreateOrderFailed возвращается при неудачной попытке создать заказ.
-	ErrCreateOrderFailed = errors.New("failed to create order")
-
-	// ErrUpdateOrderFailed возвращается при ошибке обновления заказа.
-	ErrUpdateOrderFailed = errors.New("failed to update order")
-
-	// ErrInvalidOrderUUID возвращается, если переданный UUID некорректен.
-	ErrInvalidOrderUUID = errors.New("invalid order uuid")
-
-	// ErrDatabase возвращается при непредвиденной ошибке БД.
-	ErrDatabase = errors.New("database error")
+	ErrOrderNotFound         = apperrors.ErrNotFound
+	ErrOrderAlreadyCancelled = apperrors.ErrForbidden
+	ErrOrderAlreadyPaid      = apperrors.ErrForbidden
+	ErrCreateOrderFailed     = apperrors.ErrInternal
+	ErrUpdateOrderFailed     = apperrors.ErrInternal
+	ErrInvalidOrderUUID      = apperrors.ErrInvalidRequest
+	ErrDatabase              = apperrors.ErrInternal
 )

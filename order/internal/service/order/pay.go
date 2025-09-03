@@ -14,7 +14,7 @@ func (s *service) PayOrder(ctx context.Context, req *model.PayOrderRequest) (*mo
 	txid, err := s.ExRepo.PayOrder(ctx, &paymentv1.PayOrderRequest{
 		Payment: &paymentv1.Payment{
 			OrderUuid:     req.OrderUUID,
-			PaymentMethod: converter.PaymentMethodToProto(&req.PaymentMethod),
+			PaymentMethod: converter.ToProtoPaymentMethod(&req.PaymentMethod),
 		},
 	})
 	if err != nil {
@@ -22,20 +22,20 @@ func (s *service) PayOrder(ctx context.Context, req *model.PayOrderRequest) (*mo
 		return &model.PayOrderResponse{}, err
 	}
 
-	order, err := s.Repo.Get(req.OrderUUID)
+	order, err := s.Repo.Get(ctx, req.OrderUUID)
 	if err != nil {
 		log.Printf("failed to get order #%v\n %v", req.OrderUUID, err)
-		return &model.PayOrderResponse{}, err
+		return nil, err
 	}
 
 	order.PaymentMethod = rModel.PaymentMethod(req.PaymentMethod)
 	order.TransactionUUID = txid.TransactionUuid
 	order.Status = rModel.OrderStatusPAID
 
-	uerr := s.Repo.UpdateOrder(ctx, converter.RepoOrderToModel(order))
-	if uerr != nil {
-		log.Printf("failed to update order #%v\n %v", req.OrderUUID, uerr)
-		return &model.PayOrderResponse{}, uerr
+	err = s.Repo.UpdateOrder(ctx, converter.ToModelOrder(order))
+	if err != nil {
+		log.Printf("failed to update order #%v\n %v", req.OrderUUID, err)
+		return nil, err
 	}
 
 	return &model.PayOrderResponse{

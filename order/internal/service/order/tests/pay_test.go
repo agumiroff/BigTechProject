@@ -5,12 +5,14 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	mockex "github.com/agumiroff/BigTechProject/order/v1/external/repository/mocks"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/repository/mocks"
+	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/service/order"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 	paymentv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/payment/v1"
@@ -23,20 +25,20 @@ func TestPayOrder_Success(t *testing.T) {
 	mockExRepo := mockex.NewOrderRepository(t)
 	svc := order.NewService(mockRepo, mockExRepo)
 
-	orderUUID := "test-order-uuid"
-	transactionUUID := "test-transaction-uuid"
+	orderUUID := "550e8400-e29b-41d4-a716-446655440001"
+	transactionUUID := "550e8400-e29b-41d4-a716-446655440002"
 
 	req := &model.PayOrderRequest{
 		OrderUUID:     orderUUID,
 		PaymentMethod: model.PaymentMethodCARD,
 	}
 
-	existingOrder := &model.Order{
+	existingOrder := &repomodel.Order{
 		OrderUUID:  orderUUID,
 		UserUUID:   "test-user",
 		PartUUIDs:  []string{"part1"},
 		TotalPrice: 100.0,
-		Status:     model.OrderStatusPENDINGPAYMENT,
+		Status:     repomodel.OrderStatusPENDINGPAYMENT,
 	}
 
 	// Mock payment service response
@@ -73,7 +75,10 @@ func TestPayOrder_Success(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	require.Equal(t, transactionUUID, resp.TransactionUUID)
+
+	expectedUUID, err := uuid.Parse(transactionUUID)
+	require.NoError(t, err)
+	require.Equal(t, expectedUUID, resp.TransactionUUID)
 
 	mockRepo.AssertExpectations(t)
 	mockExRepo.AssertExpectations(t)
@@ -86,7 +91,7 @@ func TestPayOrder_PaymentError(t *testing.T) {
 	mockExRepo := mockex.NewOrderRepository(t)
 	svc := order.NewService(mockRepo, mockExRepo)
 
-	orderUUID := "test-order-uuid"
+	orderUUID := "550e8400-e29b-41d4-a716-446655440001"
 	expectedErr := errors.New("payment service error")
 
 	req := &model.PayOrderRequest{
@@ -103,7 +108,7 @@ func TestPayOrder_PaymentError(t *testing.T) {
 	// Assert
 	require.Error(t, err)
 	require.ErrorIs(t, err, expectedErr)
-	require.Equal(t, &model.PayOrderResponse{}, resp)
+	require.Nil(t, resp)
 
 	mockRepo.AssertExpectations(t)
 	mockExRepo.AssertExpectations(t)
@@ -116,8 +121,8 @@ func TestPayOrder_OrderNotFound(t *testing.T) {
 	mockExRepo := mockex.NewOrderRepository(t)
 	svc := order.NewService(mockRepo, mockExRepo)
 
-	orderUUID := "test-order-uuid"
-	transactionUUID := "test-transaction-uuid"
+	orderUUID := "550e8400-e29b-41d4-a716-446655440001"
+	transactionUUID := "550e8400-e29b-41d4-a716-446655440002"
 
 	req := &model.PayOrderRequest{
 		OrderUUID:     orderUUID,
@@ -138,7 +143,7 @@ func TestPayOrder_OrderNotFound(t *testing.T) {
 	// Assert
 	require.Error(t, err)
 	require.ErrorIs(t, err, apperrors.ErrNotFound)
-	require.Equal(t, &model.PayOrderResponse{}, resp)
+	require.Nil(t, resp)
 
 	mockRepo.AssertExpectations(t)
 	mockExRepo.AssertExpectations(t)
@@ -151,17 +156,17 @@ func TestPayOrder_UpdateError(t *testing.T) {
 	mockExRepo := mockex.NewOrderRepository(t)
 	svc := order.NewService(mockRepo, mockExRepo)
 
-	orderUUID := "test-order-uuid"
-	transactionUUID := "test-transaction-uuid"
+	orderUUID := "550e8400-e29b-41d4-a716-446655440001"
+	transactionUUID := "550e8400-e29b-41d4-a716-446655440002"
 
 	req := &model.PayOrderRequest{
 		OrderUUID:     orderUUID,
 		PaymentMethod: model.PaymentMethodCARD,
 	}
 
-	existingOrder := &model.Order{
+	existingOrder := &repomodel.Order{
 		OrderUUID: orderUUID,
-		Status:    model.OrderStatusPENDINGPAYMENT,
+		Status:    repomodel.OrderStatusPENDINGPAYMENT,
 	}
 
 	expectedErr := errors.New("update error")
@@ -172,7 +177,7 @@ func TestPayOrder_UpdateError(t *testing.T) {
 	}, nil)
 
 	// Mock get order success
-	mockRepo.On("Get", orderUUID).Return(existingOrder, nil)
+	mockRepo.On("Get", ctx, orderUUID).Return(existingOrder, nil)
 
 	// Mock update error
 	mockRepo.On("UpdateOrder", ctx, mock.Anything).Return(expectedErr)
@@ -183,7 +188,7 @@ func TestPayOrder_UpdateError(t *testing.T) {
 	// Assert
 	require.Error(t, err)
 	require.ErrorIs(t, err, expectedErr)
-	require.Equal(t, &model.PayOrderResponse{}, resp)
+	require.Nil(t, resp)
 
 	mockRepo.AssertExpectations(t)
 	mockExRepo.AssertExpectations(t)

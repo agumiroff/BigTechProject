@@ -1,8 +1,12 @@
 package converter
 
 import (
+	"errors"
+
+	"github.com/google/uuid"
+
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
-	rModel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
+	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	OrderV1 "github.com/agumiroff/BigTechProject/shared/pkg/openapi/v1"
 	paymentv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/payment/v1"
 )
@@ -14,19 +18,26 @@ func ToModelCreateOrderRequest(req *OrderV1.CreateOrderRequest) *model.CreateOrd
 	}
 }
 
-func ToRepoOrder(m *model.Order) *rModel.Order {
-	return &rModel.Order{
+func ToRepoOrder(m *model.Order) *repomodel.Order {
+	return &repomodel.Order{
 		OrderUUID:       m.OrderUUID,
 		UserUUID:        m.UserUUID,
 		PartUUIDs:       m.PartUUIDs,
 		TotalPrice:      m.TotalPrice,
 		TransactionUUID: m.TransactionUUID,
-		PaymentMethod:   rModel.PaymentMethod(m.PaymentMethod),
-		Status:          rModel.OrderStatus(m.Status),
+		PaymentMethod:   repomodel.PaymentMethod(m.PaymentMethod),
+		Status:          repomodel.OrderStatus(m.Status),
 	}
 }
 
-func ToProtoOrder(m *model.Order) *OrderV1.Order {
+func ToProtoOrder(m *model.Order) (*OrderV1.Order, error) {
+	if m.TransactionUUID != "" {
+		_, err := uuid.Parse(m.TransactionUUID)
+		if err != nil {
+			return nil, errors.New("invalid UUID format")
+		}
+	}
+
 	return &OrderV1.Order{
 		OrderUUID:       m.OrderUUID,
 		UserUUID:        m.UserUUID,
@@ -35,10 +46,10 @@ func ToProtoOrder(m *model.Order) *OrderV1.Order {
 		TransactionUUID: OrderV1.NewOptNilString(m.TransactionUUID),
 		PaymentMethod:   OrderV1.NewOptPaymentMethod(OrderV1.PaymentMethod(m.PaymentMethod)),
 		Status:          OrderV1.OrderStatus(m.Status),
-	}
+	}, nil
 }
 
-func ToModelOrder(m *rModel.Order) *model.Order {
+func ToModelOrder(m *repomodel.Order) *model.Order {
 	return &model.Order{
 		OrderUUID:       m.OrderUUID,
 		UserUUID:        m.UserUUID,

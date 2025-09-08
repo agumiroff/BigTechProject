@@ -9,7 +9,7 @@ import (
 func (a *api) CancelOrder(ctx context.Context, params order_v1.CancelOrderByUuidParams) (order_v1.CancelOrderByUuidRes, error) {
 	err := a.service.CancelOrder(ctx, params.OrderUUID.String())
 	if err != nil {
-		return &order_v1.CancelOrderResponse{}, err
+		return nil, err
 	}
 
 	return &order_v1.CancelOrderResponse{

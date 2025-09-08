@@ -81,6 +81,9 @@ func TestCreateOrder_EmptyRequest(t *testing.T) {
 
 	req := &order_v1.CreateOrderRequest{}
 
+	// Mock service call
+	// No mock expectations needed since validation is done in the API layer
+
 	// Act
 	resp, err := apiHandler.CreateOrder(ctx, req)
 

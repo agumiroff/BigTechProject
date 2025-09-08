@@ -12,6 +12,9 @@ import (
 )
 
 func (s *service) CreateOrder(ctx context.Context, req *model.CreateOrderRequest) (res *model.CreateOrderResponse, err error) {
+	if req == nil || req.UserUUID == "" || len(req.PartUUIDs) == 0 {
+		return nil, fmt.Errorf("validation error: missing required fields")
+	}
 	sum := 0.0
 	// Check all parts in invService
 	uuids := req.PartUUIDs

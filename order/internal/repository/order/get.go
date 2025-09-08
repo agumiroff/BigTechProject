@@ -11,7 +11,6 @@ func (r *repository) Get(ctx context.Context, uuid string) (*model.Order, error)
 	if uuid == "" {
 		return nil, apperrors.ErrInvalidRequest
 	}
-
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

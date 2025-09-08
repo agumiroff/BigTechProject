@@ -4,29 +4,29 @@ import (
 	"log"
 
 	model "github.com/agumiroff/BigTechProject/inventory/v1/internal/model"
-	rModel "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/model"
+	repomodel "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/model"
 )
 
-func ModelToRepo(m *model.Part) *rModel.Part {
+func ModelToRepo(m *model.Part) *repomodel.Part {
 	if m == nil {
 		log.Printf("Business model is empty: %v", m)
 		return nil
 	}
 
-	return &rModel.Part{
+	return &repomodel.Part{
 		Uuid:          m.Uuid,
 		Name:          m.Name,
 		Description:   m.Description,
 		Price:         m.Price,
 		StockQuantity: m.StockQuantity,
-		Category:      rModel.Category(m.Category),
-		Dimensions: rModel.Dimensions{
+		Category:      repomodel.Category(m.Category),
+		Dimensions: repomodel.Dimensions{
 			Length: m.Dimensions.Length,
 			Width:  m.Dimensions.Width,
 			Height: m.Dimensions.Height,
 			Weight: m.Dimensions.Weight,
 		},
-		Manufacturer: rModel.Manufacturer{
+		Manufacturer: repomodel.Manufacturer{
 			Name:    m.Manufacturer.Name,
 			Country: m.Manufacturer.Country,
 			Website: m.Manufacturer.Website,
@@ -38,7 +38,7 @@ func ModelToRepo(m *model.Part) *rModel.Part {
 	}
 }
 
-func RepoToModel(m *rModel.Part) *model.Part {
+func RepoToModel(m *repomodel.Part) *model.Part {
 	if m == nil {
 		log.Printf("Repo model is empty :%v", m)
 		return nil
@@ -70,8 +70,8 @@ func RepoToModel(m *rModel.Part) *model.Part {
 }
 
 // FilterToRepo Filter convert
-func FilterToRepo(f *model.PartsFilter) *rModel.PartsFilter {
-	return &rModel.PartsFilter{
+func FilterToRepo(f *model.PartsFilter) *repomodel.PartsFilter {
+	return &repomodel.PartsFilter{
 		Uuids:                 f.Uuids,
 		Names:                 f.Names,
 		Categories:            CategoryToRepo(f.Categories),
@@ -80,37 +80,37 @@ func FilterToRepo(f *model.PartsFilter) *rModel.PartsFilter {
 }
 
 // CategoryToRepo Category convert
-func CategoryToRepo(c []model.Category) []rModel.Category {
-	result := make([]rModel.Category, 0, len(c))
+func CategoryToRepo(c []model.Category) []repomodel.Category {
+	result := make([]repomodel.Category, 0, len(c))
 	for _, c := range c {
 		result = append(result, categoryToRepo(c))
 	}
 	return result
 }
 
-func categoryToRepo(c model.Category) rModel.Category {
+func categoryToRepo(c model.Category) repomodel.Category {
 	switch c {
 	case model.CategoryEngine:
-		return rModel.CategoryEngine
+		return repomodel.CategoryEngine
 	case model.CategoryFuel:
-		return rModel.CategoryFuel
+		return repomodel.CategoryFuel
 	case model.CategoryPorthole:
-		return rModel.CategoryPorthole
+		return repomodel.CategoryPorthole
 	case model.CategoryWing:
-		return rModel.CategoryWing
+		return repomodel.CategoryWing
 	default:
-		return rModel.CategoryUnspecified
+		return repomodel.CategoryUnspecified
 	}
 }
 
 // Metadata converting
-func cloneMetadataToRepo(in map[string]*model.Value) map[string]*rModel.Value {
+func cloneMetadataToRepo(in map[string]*model.Value) map[string]*repomodel.Value {
 	if in == nil {
 		return nil
 	}
-	out := make(map[string]*rModel.Value, len(in))
+	out := make(map[string]*repomodel.Value, len(in))
 	for k, v := range in {
-		val := &rModel.Value{}
+		val := &repomodel.Value{}
 		if v.StringValue != nil {
 			s := *v.StringValue
 			val.StringValue = &s
@@ -125,7 +125,7 @@ func cloneMetadataToRepo(in map[string]*model.Value) map[string]*rModel.Value {
 	return out
 }
 
-func cloneMetadata(in map[string]*rModel.Value) map[string]*model.Value {
+func cloneMetadata(in map[string]*repomodel.Value) map[string]*model.Value {
 	if in == nil {
 		return nil
 	}

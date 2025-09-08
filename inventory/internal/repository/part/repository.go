@@ -47,7 +47,8 @@ func fillStorage(s *repository) {
 
 	now := time.Now().Unix()
 
-	for i := 0; i < 10; i++ {
+	iterations := 10
+	for range iterations {
 		part := &model.Part{
 			Uuid:          gofakeit.UUID(),
 			Name:          gofakeit.Name(),

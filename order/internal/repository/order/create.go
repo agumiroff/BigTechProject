@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
-	rModel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
+	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
@@ -28,12 +28,12 @@ func (r *repository) CreateOrder(ctx context.Context, req *model.Order) (*model.
 		return nil, apperrors.ErrAlreadyExists
 	}
 
-	r.storage[req.OrderUUID] = &rModel.Order{
+	r.storage[req.OrderUUID] = &repomodel.Order{
 		UserUUID:   req.UserUUID,
 		OrderUUID:  req.OrderUUID,
 		PartUUIDs:  req.PartUUIDs,
 		TotalPrice: req.TotalPrice,
-		Status:     rModel.OrderStatus(req.Status),
+		Status:     repomodel.OrderStatus(req.Status),
 	}
 
 	return &model.CreateOrderResponse{

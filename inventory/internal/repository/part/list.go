@@ -6,15 +6,14 @@ import (
 
 	"github.com/agumiroff/BigTechProject/inventory/v1/internal/model"
 	"github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/converter"
-	rModel "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/model"
+	repomodel "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/model"
 )
 
-func (s *repository) ListParts(ctx context.Context, filter *rModel.PartsFilter) ([]*model.Part, error) {
+func (s *repository) ListParts(ctx context.Context, filter *repomodel.PartsFilter) ([]*model.Part, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	var result []*model.Part
-
+	var parts []*model.Part
 	for _, part := range s.storage {
 		if len(filter.Uuids) > 0 && !contains(filter.Uuids, part.Uuid) {
 			continue
@@ -36,16 +35,16 @@ func (s *repository) ListParts(ctx context.Context, filter *rModel.PartsFilter) 
 			continue
 		}
 
-		result = append(result, converter.RepoToModel(part))
+		parts = append(parts, converter.RepoToModel(part))
 	}
-	return result, nil
+	return parts, nil
 }
 
 func contains(list []string, value string) bool {
 	return slices.Contains(list, value)
 }
 
-func containsCategory(list []rModel.Category, value rModel.Category) bool {
+func containsCategory(list []repomodel.Category, value repomodel.Category) bool {
 	return slices.Contains(list, value)
 }
 

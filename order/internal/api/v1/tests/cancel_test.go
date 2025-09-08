@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	api "github.com/agumiroff/BigTechProject/order/v1/internal/api/v1"
-	rModel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
+	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/service/mocks"
 	order_v1 "github.com/agumiroff/BigTechProject/shared/pkg/openapi/v1"
 )
@@ -50,14 +50,14 @@ func TestCancelOrder_OrderNotFound(t *testing.T) {
 	}
 
 	// Mock service error
-	mockService.EXPECT().CancelOrder(ctx, orderID.String()).Return(rModel.ErrOrderNotFound)
+	mockService.EXPECT().CancelOrder(ctx, orderID.String()).Return(repomodel.ErrOrderNotFound)
 
 	// Act
 	resp, err := apiHandler.CancelOrder(ctx, params)
 
 	// Assert
 	require.Error(t, err)
-	require.ErrorIs(t, err, rModel.ErrOrderNotFound)
+	require.ErrorIs(t, err, repomodel.ErrOrderNotFound)
 	require.Nil(t, resp)
 }
 

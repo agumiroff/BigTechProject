@@ -2,24 +2,24 @@ package converter
 
 import (
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
-	rModel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
+	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 )
 
-func ModelPayToRepo(m *model.PayOrderRequest) *rModel.PayOrderRequest {
-	return &rModel.PayOrderRequest{
+func ModelPayToRepo(m *model.PayOrderRequest) *repomodel.PayOrderRequest {
+	return &repomodel.PayOrderRequest{
 		OrderUUID:     m.OrderUUID,
-		PaymentMethod: rModel.PaymentMethod(m.PaymentMethod),
+		PaymentMethod: repomodel.PaymentMethod(m.PaymentMethod),
 	}
 }
 
-func ModelOrderToRepo(m *model.Order) *rModel.Order {
-	return &rModel.Order{
+func ModelOrderToRepo(m *model.Order) *repomodel.Order {
+	return &repomodel.Order{
 		OrderUUID:       m.OrderUUID,
-		Status:          rModel.OrderStatus(m.Status),
+		Status:          repomodel.OrderStatus(m.Status),
 		UserUUID:        m.UserUUID,
 		PartUUIDs:       m.PartUUIDs,
 		TotalPrice:      m.TotalPrice,
 		TransactionUUID: m.TransactionUUID,
-		PaymentMethod:   rModel.PaymentMethod(m.PaymentMethod),
+		PaymentMethod:   repomodel.PaymentMethod(m.PaymentMethod),
 	}
 }

@@ -2,18 +2,18 @@ package converter
 
 import (
 	"github.com/agumiroff/BigTechProject/payment/v1/internal/model"
-	rModel "github.com/agumiroff/BigTechProject/payment/v1/internal/repository/model"
+	repomodel "github.com/agumiroff/BigTechProject/payment/v1/internal/repository/model"
 )
 
-func ModelToRepo(m *model.Payment) *rModel.Payment {
-	return &rModel.Payment{
+func ModelToRepo(m *model.Payment) *repomodel.Payment {
+	return &repomodel.Payment{
 		UserUuid:      m.UserUuid,
 		OrderUuid:     m.OrderUuid,
 		PaymentMethod: paymentToRepo(m.PaymentMethod),
 	}
 }
 
-func RepoToModel(r rModel.Payment) *model.Payment {
+func RepoToModel(r repomodel.Payment) *model.Payment {
 	return &model.Payment{
 		UserUuid:      r.UserUuid,
 		OrderUuid:     r.OrderUuid,
@@ -21,30 +21,30 @@ func RepoToModel(r rModel.Payment) *model.Payment {
 	}
 }
 
-func paymentToRepo(p model.PaymentMethod) rModel.PaymentMethod {
+func paymentToRepo(p model.PaymentMethod) repomodel.PaymentMethod {
 	switch p {
 	case model.CARD:
-		return rModel.CARD
+		return repomodel.CARD
 	case model.SBP:
-		return rModel.SBP
+		return repomodel.SBP
 	case model.CreditCard:
-		return rModel.CreditCard
+		return repomodel.CreditCard
 	case model.InvestorMoney:
-		return rModel.InvestorMoney
+		return repomodel.InvestorMoney
 	default:
-		return rModel.CategoryUnspecified
+		return repomodel.CategoryUnspecified
 	}
 }
 
-func paymentToModel(p rModel.PaymentMethod) model.PaymentMethod {
+func paymentToModel(p repomodel.PaymentMethod) model.PaymentMethod {
 	switch p {
-	case rModel.CARD:
+	case repomodel.CARD:
 		return model.CARD
-	case rModel.SBP:
+	case repomodel.SBP:
 		return model.SBP
-	case rModel.CreditCard:
+	case repomodel.CreditCard:
 		return model.CreditCard
-	case rModel.InvestorMoney:
+	case repomodel.InvestorMoney:
 		return model.InvestorMoney
 	default:
 		return model.CategoryUnspecified

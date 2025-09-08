@@ -7,5 +7,10 @@ import (
 )
 
 func (h *OrderHandler) CancelOrderByUuid(ctx context.Context, params order_v1.CancelOrderByUuidParams) (order_v1.CancelOrderByUuidRes, error) {
-	return h.API.CancelOrder(ctx, params)
+	res, err := h.API.CancelOrder(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }

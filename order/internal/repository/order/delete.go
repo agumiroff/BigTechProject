@@ -3,7 +3,7 @@ package order
 import (
 	"context"
 
-	"github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
+	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
@@ -20,7 +20,7 @@ func (r *repository) DeleteOrder(ctx context.Context, uuid string) error {
 		return apperrors.ErrNotFound
 	}
 
-	if existing.Status == model.OrderStatusCANCELLED {
+	if existing.Status == repomodel.OrderStatusCANCELLED {
 		return apperrors.ErrForbidden
 	}
 

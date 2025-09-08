@@ -3,9 +3,15 @@ package order
 import (
 	"context"
 	"log"
+
+	"github.com/agumiroff/BigTechProject/shared/v1/apperrors"
 )
 
 func (s *service) CancelOrder(ctx context.Context, uuid string) error {
+	if uuid == "" {
+		return apperrors.ErrInvalidRequest
+	}
+
 	order, err := s.Repo.Get(ctx, uuid)
 	if err != nil {
 		log.Printf("Order with uuid does not exist %v: %v", uuid, err)

@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/converter"
-	"github.com/agumiroff/BigTechProject/shared/apperrors"
 	order_v1 "github.com/agumiroff/BigTechProject/shared/pkg/openapi/v1"
 )
 
@@ -13,8 +12,12 @@ func (a *api) GetOrder(ctx context.Context, req order_v1.GetOrderByUuidParams) (
 	order, err := a.service.GetOrder(ctx, req.OrderUUID.String())
 	if err != nil {
 		log.Printf("Failed to get order %v", err)
-		return nil, apperrors.Map(err)
+		return nil, err
 	}
 
-	return converter.ToProtoOrder(order), nil
+	resp, err := converter.ToProtoOrder(order)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }

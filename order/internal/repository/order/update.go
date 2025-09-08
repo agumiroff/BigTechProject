@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
-	rModel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
+	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
@@ -25,21 +25,21 @@ func (r *repository) UpdateOrder(ctx context.Context, m *model.Order) error {
 		return apperrors.ErrNotFound
 	}
 
-	if existing.Status == rModel.OrderStatusCANCELLED {
+	if existing.Status == repomodel.OrderStatusCANCELLED {
 		return apperrors.ErrForbidden
 	}
 
-	if existing.Status == rModel.OrderStatus(model.OrderStatusPAID) &&
+	if existing.Status == repomodel.OrderStatus(model.OrderStatusPAID) &&
 		m.Status != model.OrderStatusCANCELLED {
 		return apperrors.ErrForbidden
 	}
 
-	r.storage[m.OrderUUID] = &rModel.Order{
+	r.storage[m.OrderUUID] = &repomodel.Order{
 		UserUUID:   m.UserUUID,
 		OrderUUID:  m.OrderUUID,
 		PartUUIDs:  m.PartUUIDs,
 		TotalPrice: m.TotalPrice,
-		Status:     rModel.OrderStatus(m.Status),
+		Status:     repomodel.OrderStatus(m.Status),
 	}
 
 	return nil

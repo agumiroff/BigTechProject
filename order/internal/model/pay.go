@@ -1,5 +1,7 @@
 package model
 
+import "github.com/google/uuid"
+
 type PayOrderRequest struct {
 	UserUUID      string
 	OrderUUID     string
@@ -7,5 +9,5 @@ type PayOrderRequest struct {
 }
 
 type PayOrderResponse struct {
-	TransactionUUID string
+	TransactionUUID uuid.UUID
 }

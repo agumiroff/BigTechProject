@@ -31,7 +31,7 @@ func TestPayOrder_Success(t *testing.T) {
 	}
 
 	expectedResp := &model.PayOrderResponse{
-		TransactionUUID: txID.String(),
+		TransactionUUID: txID,
 	}
 
 	// Mock service call
@@ -94,6 +94,8 @@ func TestPayOrder_EmptyRequest(t *testing.T) {
 
 	req := &order_v1.PayOrderRequest{}
 
+	// No mock expectations needed since validation is done in the API layer
+
 	// Act
 	resp, err := apiHandler.PayOrder(ctx, req, params)
 
@@ -118,13 +120,11 @@ func TestPayOrder_InvalidTransactionUUID(t *testing.T) {
 		PaymentMethod: order_v1.PaymentMethodCARD,
 	}
 
-	// Mock service returns invalid UUID
+	// Return an error during UUID parsing
 	mockService.EXPECT().PayOrder(ctx, &model.PayOrderRequest{
 		OrderUUID:     orderID.String(),
 		PaymentMethod: model.PaymentMethodCARD,
-	}).Return(&model.PayOrderResponse{
-		TransactionUUID: "invalid-uuid",
-	}, nil)
+	}).Return(nil, errors.New("invalid UUID format"))
 
 	// Act
 	resp, err := apiHandler.PayOrder(ctx, req, params)

@@ -1,0 +1,98 @@
+{
+  "create": "parts",
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["uuid", "name", "category", "stock_quantity", "created_at", "updated_at"],
+      "properties": {
+        "uuid": {
+          "bsonType": "string",
+          "description": "Unique identifier for the part"
+        },
+        "name": {
+          "bsonType": "string",
+          "description": "Name of the part"
+        },
+        "description": {
+          "bsonType": "string",
+          "description": "Description of the part"
+        },
+        "price": {
+          "bsonType": "double",
+          "description": "Price of the part"
+        },
+        "stock_quantity": {
+          "bsonType": "int",
+          "minimum": 0,
+          "description": "Current stock quantity"
+        },
+        "category": {
+          "bsonType": "string",
+          "enum": ["engine", "transmission", "suspension", "brakes", "electronics", "body", "interior", "other"],
+          "description": "Category of the part"
+        },
+        "dimensions": {
+          "bsonType": "object",
+          "required": ["length", "width", "height", "weight"],
+          "properties": {
+            "length": {
+              "bsonType": "double",
+              "description": "Length in millimeters"
+            },
+            "width": {
+              "bsonType": "double",
+              "description": "Width in millimeters"
+            },
+            "height": {
+              "bsonType": "double",
+              "description": "Height in millimeters"
+            },
+            "weight": {
+              "bsonType": "double",
+              "description": "Weight in kilograms"
+            }
+          }
+        },
+        "manufacturer": {
+          "bsonType": "object",
+          "required": ["name", "country"],
+          "properties": {
+            "name": {
+              "bsonType": "string",
+              "description": "Manufacturer name"
+            },
+            "country": {
+              "bsonType": "string",
+              "description": "Country of manufacture"
+            },
+            "website": {
+              "bsonType": "string",
+              "description": "Manufacturer website"
+            }
+          }
+        },
+        "tags": {
+          "bsonType": "array",
+          "items": {
+            "bsonType": "string"
+          },
+          "description": "Tags for the part"
+        },
+        "metadata": {
+          "bsonType": "object",
+          "description": "Additional metadata key-value pairs"
+        },
+        "created_at": {
+          "bsonType": "long",
+          "description": "Creation timestamp"
+        },
+        "updated_at": {
+          "bsonType": "long",
+          "description": "Last update timestamp"
+        }
+      }
+    }
+  },
+  "validationLevel": "strict",
+  "validationAction": "error"
+}

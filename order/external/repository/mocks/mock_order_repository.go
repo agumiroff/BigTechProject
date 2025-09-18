@@ -54,35 +54,6 @@ func (_m *OrderRepository) ListParts(ctx context.Context, req *inventoryv1.ListP
 	return r0, r1
 }
 
-// OrderRepository_ListParts_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListParts'
-type OrderRepository_ListParts_Call struct {
-	*mock.Call
-}
-
-// ListParts is a helper method to define mock.On call
-//   - ctx context.Context
-//   - req *inventoryv1.ListPartsRequest
-func (_e *OrderRepository_Expecter) ListParts(ctx interface{}, req interface{}) *OrderRepository_ListParts_Call {
-	return &OrderRepository_ListParts_Call{Call: _e.mock.On("ListParts", ctx, req)}
-}
-
-func (_c *OrderRepository_ListParts_Call) Run(run func(ctx context.Context, req *inventoryv1.ListPartsRequest)) *OrderRepository_ListParts_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*inventoryv1.ListPartsRequest))
-	})
-	return _c
-}
-
-func (_c *OrderRepository_ListParts_Call) Return(_a0 *inventoryv1.ListPartsResponse, _a1 error) *OrderRepository_ListParts_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *OrderRepository_ListParts_Call) RunAndReturn(run func(context.Context, *inventoryv1.ListPartsRequest) (*inventoryv1.ListPartsResponse, error)) *OrderRepository_ListParts_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // PayOrder provides a mock function with given fields: ctx, req
 func (_m *OrderRepository) PayOrder(ctx context.Context, req *paymentv1.PayOrderRequest) (*paymentv1.PayOrderResponse, error) {
 	ret := _m.Called(ctx, req)
@@ -113,6 +84,49 @@ func (_m *OrderRepository) PayOrder(ctx context.Context, req *paymentv1.PayOrder
 	return r0, r1
 }
 
+// PublishOrderEvent provides a mock function with given fields: ctx, orderUUID, userUUID
+func (_m *OrderRepository) PublishOrderEvent(ctx context.Context, orderUUID string, userUUID string) error {
+	ret := _m.Called(ctx, orderUUID, userUUID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, orderUUID, userUUID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// OrderRepository_ListParts_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListParts'
+type OrderRepository_ListParts_Call struct {
+	*mock.Call
+}
+
+// ListParts is a helper method to define mock.On call
+//   - ctx context.Context
+//   - req *inventoryv1.ListPartsRequest
+func (_e *OrderRepository_Expecter) ListParts(ctx interface{}, req interface{}) *OrderRepository_ListParts_Call {
+	return &OrderRepository_ListParts_Call{Call: _e.mock.On("ListParts", ctx, req)}
+}
+
+func (_c *OrderRepository_ListParts_Call) Run(run func(ctx context.Context, req *inventoryv1.ListPartsRequest)) *OrderRepository_ListParts_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*inventoryv1.ListPartsRequest))
+	})
+	return _c
+}
+
+func (_c *OrderRepository_ListParts_Call) Return(_a0 *inventoryv1.ListPartsResponse, _a1 error) *OrderRepository_ListParts_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *OrderRepository_ListParts_Call) RunAndReturn(run func(context.Context, *inventoryv1.ListPartsRequest) (*inventoryv1.ListPartsResponse, error)) *OrderRepository_ListParts_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // OrderRepository_PayOrder_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PayOrder'
 type OrderRepository_PayOrder_Call struct {
 	*mock.Call
@@ -138,6 +152,36 @@ func (_c *OrderRepository_PayOrder_Call) Return(_a0 *paymentv1.PayOrderResponse,
 }
 
 func (_c *OrderRepository_PayOrder_Call) RunAndReturn(run func(context.Context, *paymentv1.PayOrderRequest) (*paymentv1.PayOrderResponse, error)) *OrderRepository_PayOrder_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// OrderRepository_PublishOrderEvent_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PublishOrderEvent'
+type OrderRepository_PublishOrderEvent_Call struct {
+	*mock.Call
+}
+
+// PublishOrderEvent is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orderUUID string
+//   - userUUID string
+func (_e *OrderRepository_Expecter) PublishOrderEvent(ctx interface{}, orderUUID interface{}, userUUID interface{}) *OrderRepository_PublishOrderEvent_Call {
+	return &OrderRepository_PublishOrderEvent_Call{Call: _e.mock.On("PublishOrderEvent", ctx, orderUUID, userUUID)}
+}
+
+func (_c *OrderRepository_PublishOrderEvent_Call) Run(run func(ctx context.Context, orderUUID string, userUUID string)) *OrderRepository_PublishOrderEvent_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *OrderRepository_PublishOrderEvent_Call) Return(_a0 error) *OrderRepository_PublishOrderEvent_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *OrderRepository_PublishOrderEvent_Call) RunAndReturn(run func(context.Context, string, string) error) *OrderRepository_PublishOrderEvent_Call {
 	_c.Call.Return(run)
 	return _c
 }

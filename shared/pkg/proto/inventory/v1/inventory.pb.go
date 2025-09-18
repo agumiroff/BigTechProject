@@ -7,12 +7,11 @@
 package inventoryv1
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -795,24 +794,21 @@ func file_inventory_v1_inventory_proto_rawDescGZIP() []byte {
 	return file_inventory_v1_inventory_proto_rawDescData
 }
 
-var (
-	file_inventory_v1_inventory_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-	file_inventory_v1_inventory_proto_msgTypes  = make([]protoimpl.MessageInfo, 10)
-	file_inventory_v1_inventory_proto_goTypes   = []any{
-		(Category)(0),             // 0: inventory.v1.Category
-		(*GetPartRequest)(nil),    // 1: inventory.v1.GetPartRequest
-		(*GetPartResponse)(nil),   // 2: inventory.v1.GetPartResponse
-		(*Dimensions)(nil),        // 3: inventory.v1.Dimensions
-		(*Manufacturer)(nil),      // 4: inventory.v1.Manufacturer
-		(*Value)(nil),             // 5: inventory.v1.Value
-		(*Part)(nil),              // 6: inventory.v1.Part
-		(*PartsFilter)(nil),       // 7: inventory.v1.PartsFilter
-		(*ListPartsRequest)(nil),  // 8: inventory.v1.ListPartsRequest
-		(*ListPartsResponse)(nil), // 9: inventory.v1.ListPartsResponse
-		nil,                       // 10: inventory.v1.Part.MetadataEntry
-	}
-)
-
+var file_inventory_v1_inventory_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_inventory_v1_inventory_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_inventory_v1_inventory_proto_goTypes = []any{
+	(Category)(0),             // 0: inventory.v1.Category
+	(*GetPartRequest)(nil),    // 1: inventory.v1.GetPartRequest
+	(*GetPartResponse)(nil),   // 2: inventory.v1.GetPartResponse
+	(*Dimensions)(nil),        // 3: inventory.v1.Dimensions
+	(*Manufacturer)(nil),      // 4: inventory.v1.Manufacturer
+	(*Value)(nil),             // 5: inventory.v1.Value
+	(*Part)(nil),              // 6: inventory.v1.Part
+	(*PartsFilter)(nil),       // 7: inventory.v1.PartsFilter
+	(*ListPartsRequest)(nil),  // 8: inventory.v1.ListPartsRequest
+	(*ListPartsResponse)(nil), // 9: inventory.v1.ListPartsResponse
+	nil,                       // 10: inventory.v1.Part.MetadataEntry
+}
 var file_inventory_v1_inventory_proto_depIdxs = []int32{
 	6,  // 0: inventory.v1.GetPartResponse.part:type_name -> inventory.v1.Part
 	0,  // 1: inventory.v1.Part.category:type_name -> inventory.v1.Category

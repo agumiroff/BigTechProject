@@ -2,8 +2,7 @@ package model
 
 type PayOrderRequest struct {
 	OrderUUID     string
-	UserUUID      string
-	PaymentMethod PaymentMethod
+	PaymentMethod string
 }
 
 type PayOrderResponse struct {

@@ -36,6 +36,9 @@ func TestCancelOrder_Success(t *testing.T) {
 	// Mock delete order
 	mockRepo.On("DeleteOrder", ctx, orderUUID).Return(nil)
 
+	// Mock publish event
+	mockExRepo.On("PublishOrderEvent", ctx, orderUUID, existingOrder.UserUUID).Return(nil)
+
 	// Act
 	err := svc.CancelOrder(ctx, orderUUID)
 

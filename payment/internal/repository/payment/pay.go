@@ -2,11 +2,15 @@ package payment
 
 import (
 	"context"
+	"fmt"
+	"log"
+	"time"
 
-	"github.com/brianvoe/gofakeit/v6"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/agumiroff/BigTechProject/payment/v1/internal/model"
 	"github.com/agumiroff/BigTechProject/payment/v1/internal/repository/converter"
+	"github.com/brianvoe/gofakeit/v6"
 )
 
 func (r *repository) PayOrder(ctx context.Context, p *model.Payment) (string, error) {
@@ -14,23 +18,34 @@ func (r *repository) PayOrder(ctx context.Context, p *model.Payment) (string, er
 		return "", ErrPaymentRequired
 	}
 
-	if p.UserUuid == "" {
+	if p.UUID == "" {
 		return "", ErrUserUUIDRequired
 	}
 
-	if p.OrderUuid == "" {
+	if p.OrderUUID == "" {
 		return "", ErrOrderUUIDRequired
 	}
 
-	if p.PaymentMethod == model.CategoryUnspecified {
+	if p.PaymentMethod == "" {
 		return "", ErrPaymentMethodInvalid
 	}
 
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	// Convert domain model to repository model
+	repoPayment := converter.ModelToRepo(p)
+	txid := gofakeit.UUID()
+	repoPayment.UUID = txid
+	repoPayment.CreatedAt = time.Now()
+	repoPayment.UpdatedAt = time.Now()
 
-	uuid := gofakeit.UUID()
-	r.storage[uuid] = converter.ModelToRepo(p)
+	// Insert payment
+	_, err := r.collection.InsertOne(ctx, repoPayment)
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return "", fmt.Errorf("payment for order %s already exists", p.OrderUUID)
+		}
+		return "", fmt.Errorf("failed to create payment: %w", err)
+	}
 
-	return uuid, nil
+	log.Printf("payment successfully created")
+	return txid, nil
 }

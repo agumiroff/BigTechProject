@@ -5,48 +5,29 @@ import (
 	repomodel "github.com/agumiroff/BigTechProject/payment/v1/internal/repository/model"
 )
 
+// ModelToRepo converts a domain model payment to a repository model payment
 func ModelToRepo(m *model.Payment) *repomodel.Payment {
+	if m == nil {
+		return nil
+	}
+
 	return &repomodel.Payment{
-		UserUuid:      m.UserUuid,
-		OrderUuid:     m.OrderUuid,
-		PaymentMethod: paymentToRepo(m.PaymentMethod),
+		OrderUUID:     m.OrderUUID,
+		PaymentMethod: repomodel.PaymentMethod(m.PaymentMethod),
+		Status:        repomodel.PaymentStatusPending,
+		Amount:        m.Amount,
 	}
 }
 
-func RepoToModel(r repomodel.Payment) *model.Payment {
+// RepoToModel converts a repository model payment to a domain model payment
+func RepoToModel(r *repomodel.Payment) *model.Payment {
+	if r == nil {
+		return nil
+	}
+
 	return &model.Payment{
-		UserUuid:      r.UserUuid,
-		OrderUuid:     r.OrderUuid,
-		PaymentMethod: paymentToModel(r.PaymentMethod),
-	}
-}
-
-func paymentToRepo(p model.PaymentMethod) repomodel.PaymentMethod {
-	switch p {
-	case model.CARD:
-		return repomodel.CARD
-	case model.SBP:
-		return repomodel.SBP
-	case model.CreditCard:
-		return repomodel.CreditCard
-	case model.InvestorMoney:
-		return repomodel.InvestorMoney
-	default:
-		return repomodel.CategoryUnspecified
-	}
-}
-
-func paymentToModel(p repomodel.PaymentMethod) model.PaymentMethod {
-	switch p {
-	case repomodel.CARD:
-		return model.CARD
-	case repomodel.SBP:
-		return model.SBP
-	case repomodel.CreditCard:
-		return model.CreditCard
-	case repomodel.InvestorMoney:
-		return model.InvestorMoney
-	default:
-		return model.CategoryUnspecified
+		UUID:          r.UUID,
+		OrderUUID:     r.OrderUUID,
+		PaymentMethod: model.PaymentMethod(r.PaymentMethod),
 	}
 }

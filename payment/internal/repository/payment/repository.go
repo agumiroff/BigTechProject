@@ -1,19 +1,15 @@
 package payment
 
 import (
-	"sync"
-
-	"github.com/agumiroff/BigTechProject/payment/v1/internal/repository/model"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type repository struct {
-	mu sync.RWMutex
-
-	storage map[string]*model.Payment
+	collection *mongo.Collection
 }
 
-func NewRepository() *repository {
+func NewRepository(db *mongo.Database) *repository {
 	return &repository{
-		storage: make(map[string]*model.Payment),
+		collection: db.Collection("payments"),
 	}
 }

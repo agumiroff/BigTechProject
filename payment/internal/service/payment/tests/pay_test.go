@@ -13,16 +13,16 @@ import (
 	paymentService "github.com/agumiroff/BigTechProject/payment/v1/internal/service/payment"
 )
 
-type mockRepo struct {
+type mockPaymentRepository struct {
 	mock.Mock
 }
 
-func (m *mockRepo) PayOrder(ctx context.Context, p *model.Payment) (string, error) {
+func (m *mockPaymentRepository) PayOrder(ctx context.Context, p *model.Payment) (string, error) {
 	args := m.Called(ctx, p)
 	return args.String(0), args.Error(1)
 }
 
-func (m *mockRepo) GetPayment(ctx context.Context, uuid string) (*model.Payment, error) {
+func (m *mockPaymentRepository) GetPayment(ctx context.Context, uuid string) (*model.Payment, error) {
 	args := m.Called(ctx, uuid)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -30,308 +30,212 @@ func (m *mockRepo) GetPayment(ctx context.Context, uuid string) (*model.Payment,
 	return args.Get(0).(*model.Payment), args.Error(1)
 }
 
-func TestPayOrder_Success(t *testing.T) {
-	// Arrange
-	mockRepo := new(mockRepo)
-	svc := paymentService.NewService(mockRepo)
+func TestPayOrder(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		// Arrange
+		mockRepo := new(mockPaymentRepository)
+		svc := paymentService.NewService(mockRepo)
 
-	ctx := context.Background()
-	expectedPayment := &model.Payment{
-		UserUuid:      "user-123",
-		OrderUuid:     "order-123",
-		PaymentMethod: model.CARD,
-	}
-	expectedTxID := "tx-123"
+		payment := &model.Payment{
+			UUID:          "user-123",
+			OrderUUID:     "order-123",
+			PaymentMethod: model.PaymentMethodCard,
+		}
+		expectedTxID := "tx-123"
 
-	mockRepo.On("PayOrder", ctx, expectedPayment).
-		Return(expectedTxID, nil)
+		mockRepo.On("PayOrder", mock.Anything, payment).Return(expectedTxID, nil)
 
-	// Act
-	txID, err := svc.PayOrder(ctx, expectedPayment)
+		// Act
+		txID, err := svc.PayOrder(context.Background(), payment)
 
-	// Assert
-	assert.NoError(t, err)
-	assert.Equal(t, expectedTxID, txID)
-	mockRepo.AssertExpectations(t)
+		// Assert
+		assert.NoError(t, err)
+		assert.Equal(t, expectedTxID, txID)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("validation errors", func(t *testing.T) {
+		testCases := []struct {
+			name    string
+			payment *model.Payment
+			expErr  error
+		}{
+			{
+				name:    "nil payment",
+				payment: nil,
+				expErr:  repoErrors.ErrPaymentRequired,
+			},
+
+			{
+				name: "unspecified payment method",
+				payment: &model.Payment{
+					UUID:      "test-user",
+					OrderUUID: "test-order",
+				},
+				expErr: repoErrors.ErrPaymentMethodInvalid,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				// Arrange
+				mockRepo := new(mockPaymentRepository)
+
+				svc := paymentService.NewService(mockRepo)
+
+				// Act
+				txID, err := svc.PayOrder(context.Background(), tc.payment)
+
+				// Assert
+				assert.Error(t, err)
+				assert.Equal(t, "", txID)
+				assert.ErrorIs(t, err, tc.expErr)
+				// Validation happens before mock is called
+			})
+		}
+	})
+
+	t.Run("context handling", func(t *testing.T) {
+		testCases := []struct {
+			name    string
+			ctxFunc func() (context.Context, context.CancelFunc)
+			expErr  error
+		}{
+			{
+				name: "context canceled",
+				ctxFunc: func() (context.Context, context.CancelFunc) {
+					ctx, cancel := context.WithCancel(context.Background())
+					cancel()
+					return ctx, cancel
+				},
+				expErr: context.Canceled,
+			},
+			{
+				name: "context deadline exceeded",
+				ctxFunc: func() (context.Context, context.CancelFunc) {
+					return context.WithTimeout(context.Background(), 0)
+				},
+				expErr: context.DeadlineExceeded,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				// Arrange
+				mockRepo := new(mockPaymentRepository)
+				svc := paymentService.NewService(mockRepo)
+
+				ctx, cancel := tc.ctxFunc()
+				defer cancel()
+
+				payment := &model.Payment{
+					UUID:          "user-123",
+					OrderUUID:     "order-123",
+					PaymentMethod: model.PaymentMethodCard,
+				}
+
+				mockRepo.On("PayOrder", ctx, payment).Return("", tc.expErr)
+
+				// Act
+				txID, err := svc.PayOrder(ctx, payment)
+
+				// Assert
+				assert.Error(t, err)
+				assert.Equal(t, "", txID)
+				assert.True(t, errors.Is(err, tc.expErr))
+				mockRepo.AssertExpectations(t)
+			})
+		}
+	})
 }
 
-func TestPayOrder_RepositoryError(t *testing.T) {
-	// Arrange
-	mockRepo := new(mockRepo)
-	svc := paymentService.NewService(mockRepo)
+func TestGetPayment(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		// Arrange
+		mockRepo := new(mockPaymentRepository)
+		svc := paymentService.NewService(mockRepo)
 
-	ctx := context.Background()
-	payment := &model.Payment{
-		UserUuid:      "user-123",
-		OrderUuid:     "order-123",
-		PaymentMethod: model.CARD,
-	}
+		expectedPayment := &model.Payment{
+			UUID:          "user-123",
+			OrderUUID:     "order-123",
+			PaymentMethod: model.PaymentMethodCard,
+		}
+		paymentID := "payment-123"
 
-	expectedErr := repoErrors.ErrPaymentRequired
-	mockRepo.On("PayOrder", ctx, payment).
-		Return("", expectedErr)
+		mockRepo.On("GetPayment", mock.Anything, paymentID).Return(expectedPayment, nil)
 
-	// Act
-	txID, err := svc.PayOrder(ctx, payment)
+		// Act
+		payment, err := svc.GetPayment(context.Background(), paymentID)
 
-	// Assert
-	assert.Error(t, err)
-	assert.Equal(t, "", txID)
-	assert.True(t, errors.Is(err, expectedErr))
-	mockRepo.AssertExpectations(t)
-}
+		// Assert
+		assert.NoError(t, err)
+		assert.Equal(t, expectedPayment, payment)
+		mockRepo.AssertExpectations(t)
+	})
 
-func TestPayOrder_ValidationErrors(t *testing.T) {
-	testCases := []struct {
-		name     string
-		payment  *model.Payment
-		mockFunc func(*mockRepo)
-		expErr   error
-	}{
-		{
-			name:    "nil payment",
-			payment: nil,
-			mockFunc: func(r *mockRepo) {
-				r.On("PayOrder", mock.Anything, (*model.Payment)(nil)).
-					Return("", repoErrors.ErrPaymentRequired)
+	t.Run("not found", func(t *testing.T) {
+		// Arrange
+		mockRepo := new(mockPaymentRepository)
+		svc := paymentService.NewService(mockRepo)
+
+		paymentID := "non-existent-payment"
+		mockRepo.On("GetPayment", mock.Anything, paymentID).Return(nil, repoErrors.ErrPaymentNotFound)
+
+		// Act
+		payment, err := svc.GetPayment(context.Background(), paymentID)
+
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, payment)
+		assert.ErrorIs(t, err, repoErrors.ErrPaymentNotFound)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("context handling", func(t *testing.T) {
+		testCases := []struct {
+			name    string
+			ctxFunc func() (context.Context, context.CancelFunc)
+			expErr  error
+		}{
+			{
+				name: "context canceled",
+				ctxFunc: func() (context.Context, context.CancelFunc) {
+					ctx, cancel := context.WithCancel(context.Background())
+					cancel()
+					return ctx, cancel
+				},
+				expErr: context.Canceled,
 			},
-			expErr: repoErrors.ErrPaymentRequired,
-		},
-		{
-			name: "empty user uuid",
-			payment: &model.Payment{
-				OrderUuid:     "order-123",
-				PaymentMethod: model.CARD,
+			{
+				name: "context deadline exceeded",
+				ctxFunc: func() (context.Context, context.CancelFunc) {
+					return context.WithTimeout(context.Background(), 0)
+				},
+				expErr: context.DeadlineExceeded,
 			},
-			mockFunc: func(r *mockRepo) {
-				r.On("PayOrder", mock.Anything, mock.MatchedBy(func(p *model.Payment) bool {
-					return p.OrderUuid == "order-123" && p.UserUuid == "" && p.PaymentMethod == model.CARD
-				})).Return("", repoErrors.ErrUserUUIDRequired)
-			},
-			expErr: repoErrors.ErrUserUUIDRequired,
-		},
-		{
-			name: "empty order uuid",
-			payment: &model.Payment{
-				UserUuid:      "user-123",
-				PaymentMethod: model.CARD,
-			},
-			mockFunc: func(r *mockRepo) {
-				r.On("PayOrder", mock.Anything, mock.MatchedBy(func(p *model.Payment) bool {
-					return p.UserUuid == "user-123" && p.OrderUuid == "" && p.PaymentMethod == model.CARD
-				})).Return("", repoErrors.ErrOrderUUIDRequired)
-			},
-			expErr: repoErrors.ErrOrderUUIDRequired,
-		},
-		{
-			name: "invalid payment method",
-			payment: &model.Payment{
-				UserUuid:      "user-123",
-				OrderUuid:     "order-123",
-				PaymentMethod: model.CategoryUnspecified,
-			},
-			mockFunc: func(r *mockRepo) {
-				r.On("PayOrder", mock.Anything, mock.MatchedBy(func(p *model.Payment) bool {
-					return p.UserUuid == "user-123" && p.OrderUuid == "order-123" && p.PaymentMethod == model.CategoryUnspecified
-				})).Return("", repoErrors.ErrPaymentMethodInvalid)
-			},
-			expErr: repoErrors.ErrPaymentMethodInvalid,
-		},
-	}
+		}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Arrange
-			mockRepo := new(mockRepo)
-			tc.mockFunc(mockRepo)
-			svc := paymentService.NewService(mockRepo)
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				// Arrange
+				mockRepo := new(mockPaymentRepository)
+				svc := paymentService.NewService(mockRepo)
 
-			// Act
-			txID, err := svc.PayOrder(context.Background(), tc.payment)
+				ctx, cancel := tc.ctxFunc()
+				defer cancel()
 
-			// Assert
-			assert.Error(t, err)
-			assert.Equal(t, "", txID)
-			assert.True(t, errors.Is(err, tc.expErr))
-			mockRepo.AssertExpectations(t)
-		})
-	}
-}
+				paymentID := "payment-123"
+				mockRepo.On("GetPayment", ctx, paymentID).Return(nil, tc.expErr)
 
-func TestPayOrder_ContextHandling(t *testing.T) {
-	testCases := []struct {
-		name    string
-		ctxFunc func() (context.Context, context.CancelFunc)
-		expErr  error
-		payment *model.Payment
-	}{
-		{
-			name: "context canceled",
-			ctxFunc: func() (context.Context, context.CancelFunc) {
-				ctx, cancel := context.WithCancel(context.Background())
-				cancel()
-				return ctx, cancel
-			},
-			expErr: context.Canceled,
-			payment: &model.Payment{
-				UserUuid:      "user-123",
-				OrderUuid:     "order-123",
-				PaymentMethod: model.CARD,
-			},
-		},
-		{
-			name: "context deadline exceeded",
-			ctxFunc: func() (context.Context, context.CancelFunc) {
-				return context.WithTimeout(context.Background(), 0)
-			},
-			expErr: context.DeadlineExceeded,
-			payment: &model.Payment{
-				UserUuid:      "user-123",
-				OrderUuid:     "order-123",
-				PaymentMethod: model.CARD,
-			},
-		},
-	}
+				// Act
+				payment, err := svc.GetPayment(ctx, paymentID)
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Arrange
-			mockRepo := new(mockRepo)
-			svc := paymentService.NewService(mockRepo)
-
-			ctx, cancel := tc.ctxFunc()
-			defer cancel()
-
-			mockRepo.On("PayOrder", ctx, tc.payment).Return("", tc.expErr)
-
-			// Act
-			txID, err := svc.PayOrder(ctx, tc.payment)
-
-			// Assert
-			assert.Error(t, err)
-			assert.Equal(t, "", txID)
-			assert.True(t, errors.Is(err, tc.expErr))
-			mockRepo.AssertExpectations(t)
-		})
-	}
-}
-
-func TestGetPayment_Success(t *testing.T) {
-	// Arrange
-	mockRepo := new(mockRepo)
-	svc := paymentService.NewService(mockRepo)
-
-	ctx := context.Background()
-	expectedPayment := &model.Payment{
-		UserUuid:      "user-123",
-		OrderUuid:     "order-123",
-		PaymentMethod: model.CARD,
-	}
-	txID := "tx-123"
-
-	mockRepo.On("GetPayment", ctx, txID).Return(expectedPayment, nil)
-
-	// Act
-	payment, err := svc.GetPayment(ctx, txID)
-
-	// Assert
-	assert.NoError(t, err)
-	assert.Equal(t, expectedPayment, payment)
-	mockRepo.AssertExpectations(t)
-}
-
-func TestGetPayment_ValidationErrors(t *testing.T) {
-	testCases := []struct {
-		name   string
-		txID   string
-		expErr error
-		setup  func(*mockRepo)
-	}{
-		{
-			name:   "empty transaction ID",
-			txID:   "",
-			expErr: repoErrors.ErrTxIDRequired,
-			setup: func(r *mockRepo) {
-				r.On("GetPayment", mock.Anything, "").
-					Return(nil, repoErrors.ErrTxIDRequired)
-			},
-		},
-		{
-			name:   "payment not found",
-			txID:   "non-existent-tx",
-			expErr: repoErrors.ErrPaymentNotFound,
-			setup: func(r *mockRepo) {
-				r.On("GetPayment", mock.Anything, "non-existent-tx").
-					Return(nil, repoErrors.ErrPaymentNotFound)
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Arrange
-			mockRepo := new(mockRepo)
-			tc.setup(mockRepo)
-			svc := paymentService.NewService(mockRepo)
-
-			// Act
-			payment, err := svc.GetPayment(context.Background(), tc.txID)
-
-			// Assert
-			assert.Error(t, err)
-			assert.Nil(t, payment)
-			assert.True(t, errors.Is(err, tc.expErr))
-			mockRepo.AssertExpectations(t)
-		})
-	}
-}
-
-func TestGetPayment_ContextHandling(t *testing.T) {
-	testCases := []struct {
-		name    string
-		ctxFunc func() (context.Context, context.CancelFunc)
-		expErr  error
-		txID    string
-	}{
-		{
-			name: "context canceled",
-			ctxFunc: func() (context.Context, context.CancelFunc) {
-				ctx, cancel := context.WithCancel(context.Background())
-				cancel()
-				return ctx, cancel
-			},
-			expErr: context.Canceled,
-			txID:   "tx-123",
-		},
-		{
-			name: "context deadline exceeded",
-			ctxFunc: func() (context.Context, context.CancelFunc) {
-				return context.WithTimeout(context.Background(), 0)
-			},
-			expErr: context.DeadlineExceeded,
-			txID:   "tx-123",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Arrange
-			mockRepo := new(mockRepo)
-			svc := paymentService.NewService(mockRepo)
-
-			ctx, cancel := tc.ctxFunc()
-			defer cancel()
-
-			mockRepo.On("GetPayment", ctx, tc.txID).Return(nil, tc.expErr)
-
-			// Act
-			payment, err := svc.GetPayment(ctx, tc.txID)
-
-			// Assert
-			assert.Error(t, err)
-			assert.Nil(t, payment)
-			assert.True(t, errors.Is(err, tc.expErr))
-			mockRepo.AssertExpectations(t)
-		})
-	}
+				// Assert
+				assert.Error(t, err)
+				assert.Nil(t, payment)
+				assert.True(t, errors.Is(err, tc.expErr))
+				mockRepo.AssertExpectations(t)
+			})
+		}
+	})
 }

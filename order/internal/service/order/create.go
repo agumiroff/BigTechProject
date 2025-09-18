@@ -11,65 +11,92 @@ import (
 	inventoryv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
 )
 
-func (s *service) CreateOrder(ctx context.Context, req *model.CreateOrderRequest) (res *model.CreateOrderResponse, err error) {
-	if req == nil || req.UserUUID == "" || len(req.PartUUIDs) == 0 {
-		return nil, fmt.Errorf("validation error: missing required fields")
+func (s *service) CreateOrder(ctx context.Context, req *model.CreateOrderRequest) (*model.CreateOrderResponse, error) {
+	// Validate request
+	if err := validateCreateOrderRequest(req); err != nil {
+		log.Printf("Invalid create order request: %v", err)
+		return nil, fmt.Errorf("validation error: %w", err)
 	}
-	sum := 0.0
-	// Check all parts in invService
-	uuids := req.PartUUIDs
 
+	// Get parts from inventory service
 	list, err := s.ExRepo.ListParts(ctx, &inventoryv1.ListPartsRequest{
 		Filter: &inventoryv1.PartsFilter{
-			Uuids: uuids,
+			Uuids: req.PartUUIDs,
 		},
 	})
 	if err != nil {
-		log.Printf("failed to list parts: %s", err)
+		log.Printf("Failed to list parts from inventory: %v", err)
+		return nil, fmt.Errorf("failed to get parts: %w", err)
+	}
+	log.Printf("list of parts successfully loaded %v", list.Parts)
+
+	// Validate all parts exist
+	if err = validatePartsExist(req.PartUUIDs, list.Parts); err != nil {
+		log.Printf("parts validation failed: %v", err)
 		return nil, err
 	}
 
-	var stockParts []*inventoryv1.Part
-	var stockPartUuids []string
-	for _, part := range list.Parts {
-		stockParts = append(stockParts, part)
-		stockPartUuids = append(stockPartUuids, part.Uuid)
-	}
+	// Calculate total price and extract part UUIDs
+	totalPrice, partUUIDs := calculateOrderDetails(list.Parts)
 
-	// Check all parts are exist, if no - return nil
-	log.Printf("Checking all parts are exist")
-	if len(stockParts) != len(uuids) {
-		log.Printf("Some parts not found")
-		return nil, fmt.Errorf("some parts not found")
-	}
-
-	// Calculating total price
-	for _, p := range stockParts {
-		sum += p.GetPrice()
-	}
-
-	// Generate order UUID
-	uuid := gofakeit.UUID()
-
-	// Save order with status PENDING PAYMENT
+	// Create order
 	order := &model.Order{
 		UserUUID:   req.UserUUID,
-		OrderUUID:  uuid,
-		PartUUIDs:  stockPartUuids,
-		TotalPrice: sum,
+		OrderUUID:  gofakeit.UUID(),
+		PartUUIDs:  partUUIDs,
+		TotalPrice: totalPrice,
 		Status:     model.OrderStatusPENDINGPAYMENT,
 	}
 
+	// Save order
 	response, err := s.Repo.CreateOrder(ctx, order)
 	if err != nil {
-		log.Printf("Failed to create order: %v", err)
-		return nil, err
+		log.Printf("Failed to create order in repository: %v", err)
+		return nil, fmt.Errorf("failed to create order: %w", err)
 	}
 
-	log.Printf("Order created uuid: %s\n, sum: %v\n", uuid, sum)
+	log.Printf("Order created successfully: uuid=%s, total_price=%.2f", order.OrderUUID, order.TotalPrice)
 
 	return &model.CreateOrderResponse{
 		OrderUUID:  response.OrderUUID,
 		TotalPrice: response.TotalPrice,
 	}, nil
+}
+
+func validateCreateOrderRequest(req *model.CreateOrderRequest) error {
+	if req == nil {
+		return fmt.Errorf("request cannot be nil")
+	}
+	if req.UserUUID == "" {
+		return fmt.Errorf("user uuid is required")
+	}
+	if len(req.PartUUIDs) == 0 {
+		return fmt.Errorf("at least one part uuid is required")
+	}
+	return nil
+}
+
+func validatePartsExist(requestedUUIDs []string, parts []*inventoryv1.Part) error {
+	// Create a map of returned part UUIDs for O(1) lookup
+	partMap := make(map[string]bool)
+	for _, part := range parts {
+		partMap[part.GetUuid()] = true
+	}
+
+	// Check each requested UUID exists in returned parts
+	for _, uuid := range requestedUUIDs {
+		if !partMap[uuid] {
+			return fmt.Errorf("parts not found: %s", uuid)
+		}
+	}
+
+	return nil
+}
+
+func calculateOrderDetails(parts []*inventoryv1.Part) (totalPrice float64, partUUIDs []string) {
+	for _, part := range parts {
+		totalPrice += part.GetPrice()
+		partUUIDs = append(partUUIDs, part.GetUuid())
+	}
+	return totalPrice, partUUIDs
 }

@@ -119,7 +119,14 @@ func cloneMetadataToRepo(in map[string]*model.Value) map[string]*repomodel.Value
 			i := *v.Int64Value
 			val.Int64Value = &i
 		}
-
+		if v.BoolValue != nil {
+			b := *v.BoolValue
+			val.BoolValue = &b
+		}
+		if v.DoubleValue != nil {
+			d := *v.DoubleValue
+			val.DoubleValue = &d
+		}
 		out[k] = val
 	}
 	return out
@@ -139,6 +146,14 @@ func cloneMetadata(in map[string]*repomodel.Value) map[string]*model.Value {
 		if v.Int64Value != nil {
 			i := *v.Int64Value
 			val.Int64Value = &i
+		}
+		if v.BoolValue != nil {
+			b := *v.BoolValue
+			val.BoolValue = &b
+		}
+		if v.DoubleValue != nil {
+			d := *v.DoubleValue
+			val.DoubleValue = &d
 		}
 		out[k] = val
 	}

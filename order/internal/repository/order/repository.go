@@ -1,19 +1,15 @@
 package order
 
 import (
-	"sync"
-
-	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
+	"github.com/agumiroff/BigTechProject/order/v1/internal/repository/db"
 )
 
 type repository struct {
-	mu sync.RWMutex
-
-	storage map[string]*repomodel.Order
+	db db.DB
 }
 
-func NewRepository() *repository {
+func NewRepository(db db.DB) *repository {
 	return &repository{
-		storage: make(map[string]*repomodel.Order),
+		db: db,
 	}
 }

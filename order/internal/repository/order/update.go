@@ -2,9 +2,11 @@ package order
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
+	"fmt"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
-	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
@@ -17,29 +19,50 @@ func (r *repository) UpdateOrder(ctx context.Context, m *model.Order) error {
 		return apperrors.ErrInvalidRequest
 	}
 
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	existing, exists := r.storage[m.OrderUUID]
-	if !exists {
-		return apperrors.ErrNotFound
+	// First check if order exists and get its current status
+	var currentStatus model.OrderStatus
+	err := r.db.QueryRowContext(ctx, `
+		SELECT status FROM orders WHERE order_uuid = $1
+	`, m.OrderUUID).Scan(&currentStatus)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return apperrors.ErrNotFound
+		}
+		return fmt.Errorf("failed to get order status: %w", err)
 	}
 
-	if existing.Status == repomodel.OrderStatusCANCELLED {
-		return apperrors.ErrForbidden
-	}
-
-	if existing.Status == repomodel.OrderStatus(model.OrderStatusPAID) &&
+	if currentStatus == model.OrderStatusPAID &&
 		m.Status != model.OrderStatusCANCELLED {
 		return apperrors.ErrForbidden
 	}
 
-	r.storage[m.OrderUUID] = &repomodel.Order{
-		UserUUID:   m.UserUUID,
-		OrderUUID:  m.OrderUUID,
-		PartUUIDs:  m.PartUUIDs,
-		TotalPrice: m.TotalPrice,
-		Status:     repomodel.OrderStatus(m.Status),
+	// Convert part UUIDs to JSON
+	partUUIDsJSON, err := json.Marshal(m.PartUUIDs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal part UUIDs: %w", err)
+	}
+
+	// Update order
+	result, err := r.db.ExecContext(ctx, `
+		UPDATE orders 
+		SET user_uuid = $1,
+			part_uuids = $2,
+			total_price = $3,
+			status = $4,
+			updated_at = NOW()
+		WHERE order_uuid = $5
+	`, m.UserUUID, string(partUUIDsJSON), m.TotalPrice, m.Status, m.OrderUUID)
+	if err != nil {
+		return fmt.Errorf("failed to update order: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+
+	if rows == 0 {
+		return apperrors.ErrNotFound
 	}
 
 	return nil

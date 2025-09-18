@@ -41,25 +41,25 @@ func TestPayOrder_Success(t *testing.T) {
 		Status:     repomodel.OrderStatusPENDINGPAYMENT,
 	}
 
+	// Mock get order (initial status check)
+	mockRepo.On("Get", ctx, orderUUID).Return(existingOrder, nil)
+
 	// Mock payment service response
-	mockExRepo.On("PayOrder", ctx, &paymentv1.PayOrderRequest{
-		Payment: &paymentv1.Payment{
-			OrderUuid:     orderUUID,
-			PaymentMethod: paymentv1.PaymentMethod_PAYMENT_METHOD_CARD,
-		},
-	}).Return(&paymentv1.PayOrderResponse{
+	mockExRepo.On("PayOrder", ctx, mock.MatchedBy(func(req *paymentv1.PayOrderRequest) bool {
+		if req == nil || req.Payment == nil {
+			return false
+		}
+		return req.Payment.OrderUuid == orderUUID &&
+			req.Payment.UserUuid == existingOrder.UserUUID &&
+			req.Payment.PaymentMethod == paymentv1.PaymentMethod_PAYMENT_METHOD_CARD
+	})).Return(&paymentv1.PayOrderResponse{
 		TransactionUuid: transactionUUID,
 	}, nil)
 
-	// Mock get order
-	mockRepo.On("Get", ctx, orderUUID).Return(existingOrder, nil)
-
 	// Mock update order
 	mockRepo.On("UpdateOrder", ctx, mock.MatchedBy(func(order *model.Order) bool {
-		if order == nil {
-			return false
-		}
-		return order.OrderUUID == orderUUID &&
+		return order != nil &&
+			order.OrderUUID == orderUUID &&
 			order.Status == model.OrderStatusPAID &&
 			order.PaymentMethod == model.PaymentMethodCARD &&
 			order.TransactionUUID == transactionUUID &&
@@ -68,6 +68,9 @@ func TestPayOrder_Success(t *testing.T) {
 			len(order.PartUUIDs) == len(existingOrder.PartUUIDs) &&
 			order.PartUUIDs[0] == existingOrder.PartUUIDs[0]
 	})).Return(nil)
+
+	// Mock publish event
+	mockExRepo.On("PublishOrderEvent", ctx, orderUUID, existingOrder.UserUUID).Return(nil)
 
 	// Act
 	resp, err := svc.PayOrder(ctx, req)
@@ -92,22 +95,21 @@ func TestPayOrder_PaymentError(t *testing.T) {
 	svc := order.NewService(mockRepo, mockExRepo)
 
 	orderUUID := "550e8400-e29b-41d4-a716-446655440001"
-	expectedErr := errors.New("payment service error")
 
 	req := &model.PayOrderRequest{
 		OrderUUID:     orderUUID,
 		PaymentMethod: model.PaymentMethodCARD,
 	}
 
-	// Mock payment service error
-	mockExRepo.On("PayOrder", ctx, mock.Anything).Return(nil, expectedErr)
+	// Mock get order not found
+	mockRepo.On("Get", ctx, orderUUID).Return(nil, apperrors.ErrNotFound)
 
 	// Act
 	resp, err := svc.PayOrder(ctx, req)
 
 	// Assert
 	require.Error(t, err)
-	require.ErrorIs(t, err, expectedErr)
+	require.ErrorIs(t, err, apperrors.ErrNotFound)
 	require.Nil(t, resp)
 
 	mockRepo.AssertExpectations(t)
@@ -122,19 +124,13 @@ func TestPayOrder_OrderNotFound(t *testing.T) {
 	svc := order.NewService(mockRepo, mockExRepo)
 
 	orderUUID := "550e8400-e29b-41d4-a716-446655440001"
-	transactionUUID := "550e8400-e29b-41d4-a716-446655440002"
 
 	req := &model.PayOrderRequest{
 		OrderUUID:     orderUUID,
 		PaymentMethod: model.PaymentMethodCARD,
 	}
 
-	// Mock payment service success
-	mockExRepo.On("PayOrder", ctx, mock.Anything).Return(&paymentv1.PayOrderResponse{
-		TransactionUuid: transactionUUID,
-	}, nil)
-
-	// Mock order not found
+	// Mock get order not found
 	mockRepo.On("Get", ctx, orderUUID).Return(nil, apperrors.ErrNotFound)
 
 	// Act
@@ -165,22 +161,42 @@ func TestPayOrder_UpdateError(t *testing.T) {
 	}
 
 	existingOrder := &repomodel.Order{
-		OrderUUID: orderUUID,
-		Status:    repomodel.OrderStatusPENDINGPAYMENT,
+		OrderUUID:  orderUUID,
+		UserUUID:   "test-user",
+		PartUUIDs:  []string{"part1"},
+		TotalPrice: 100.0,
+		Status:     repomodel.OrderStatusPENDINGPAYMENT,
 	}
 
 	expectedErr := errors.New("update error")
 
-	// Mock payment service success
-	mockExRepo.On("PayOrder", ctx, mock.Anything).Return(&paymentv1.PayOrderResponse{
-		TransactionUuid: transactionUUID,
-	}, nil)
-
 	// Mock get order success
 	mockRepo.On("Get", ctx, orderUUID).Return(existingOrder, nil)
 
+	// Mock payment service response
+	mockExRepo.On("PayOrder", ctx, mock.MatchedBy(func(req *paymentv1.PayOrderRequest) bool {
+		if req == nil || req.Payment == nil {
+			return false
+		}
+		return req.Payment.OrderUuid == orderUUID &&
+			req.Payment.UserUuid == existingOrder.UserUUID &&
+			req.Payment.PaymentMethod == paymentv1.PaymentMethod_PAYMENT_METHOD_CARD
+	})).Return(&paymentv1.PayOrderResponse{
+		TransactionUuid: transactionUUID,
+	}, nil)
+
 	// Mock update error
-	mockRepo.On("UpdateOrder", ctx, mock.Anything).Return(expectedErr)
+	mockRepo.On("UpdateOrder", ctx, mock.MatchedBy(func(order *model.Order) bool {
+		return order != nil &&
+			order.OrderUUID == orderUUID &&
+			order.Status == model.OrderStatusPAID &&
+			order.PaymentMethod == model.PaymentMethodCARD &&
+			order.TransactionUUID == transactionUUID &&
+			order.UserUUID == existingOrder.UserUUID &&
+			order.TotalPrice == existingOrder.TotalPrice &&
+			len(order.PartUUIDs) == len(existingOrder.PartUUIDs) &&
+			order.PartUUIDs[0] == existingOrder.PartUUIDs[0]
+	})).Return(expectedErr)
 
 	// Act
 	resp, err := svc.PayOrder(ctx, req)

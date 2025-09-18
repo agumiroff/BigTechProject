@@ -11,7 +11,7 @@ func (r *repository) PayOrder(ctx context.Context, req *paymentv1.PayOrderReques
 	res, err := r.payClient.PayOrder(ctx, req)
 	if err != nil {
 		log.Printf("Failed to pay order: %v", err)
-		return &paymentv1.PayOrderResponse{}, err
+		return nil, err
 	}
 
 	return res, nil

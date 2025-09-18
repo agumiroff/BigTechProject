@@ -53,7 +53,10 @@ func TestCreateOrder_Success(t *testing.T) {
 			len(order.PartUUIDs) == len(req.PartUUIDs) &&
 			order.TotalPrice == 125.0 &&
 			order.Status == model.OrderStatusPENDINGPAYMENT
-	})).Return(&model.CreateOrderResponse{
+	})).Run(func(args mock.Arguments) {
+		order := args.Get(1).(*model.Order)
+		mockExRepo.On("PublishOrderEvent", ctx, order.OrderUUID, req.UserUUID).Return(nil)
+	}).Return(&model.CreateOrderResponse{
 		OrderUUID:  "test-uuid",
 		TotalPrice: 125.0,
 	}, nil)

@@ -18,10 +18,11 @@ func (s *service) CancelOrder(ctx context.Context, uuid string) error {
 		return err
 	}
 
-	err = s.Repo.DeleteOrder(ctx, order.OrderUUID)
+	err = s.Repo.CancelOrder(ctx, order.OrderUUID)
 	if err != nil {
 		return err
 	}
+
 	log.Printf("Order cancelled")
 
 	return nil

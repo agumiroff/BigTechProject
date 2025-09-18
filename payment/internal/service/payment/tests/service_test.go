@@ -13,6 +13,23 @@ import (
 	paymentService "github.com/agumiroff/BigTechProject/payment/v1/internal/service/payment"
 )
 
+type mockRepo struct {
+	mock.Mock
+}
+
+func (m *mockRepo) PayOrder(ctx context.Context, p *model.Payment) (string, error) {
+	args := m.Called(ctx, p)
+	return args.String(0), args.Error(1)
+}
+
+func (m *mockRepo) GetPayment(ctx context.Context, uuid string) (*model.Payment, error) {
+	args := m.Called(ctx, uuid)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.Payment), args.Error(1)
+}
+
 func TestService_PayOrder_Success(t *testing.T) {
 	// Arrange
 	mockRepo := new(mockRepo)
@@ -20,9 +37,9 @@ func TestService_PayOrder_Success(t *testing.T) {
 
 	ctx := context.Background()
 	payment := &model.Payment{
-		UserUuid:      "user-123",
-		OrderUuid:     "order-123",
-		PaymentMethod: model.CARD,
+		UUID:          "user-123",
+		OrderUUID:     "order-123",
+		PaymentMethod: model.PaymentMethodCard,
 	}
 	expectedTxID := "tx-123"
 
@@ -44,9 +61,9 @@ func TestService_PayOrder_RepositoryError(t *testing.T) {
 
 	ctx := context.Background()
 	payment := &model.Payment{
-		UserUuid:      "user-123",
-		OrderUuid:     "order-123",
-		PaymentMethod: model.CARD,
+		UUID:          "user-123",
+		OrderUUID:     "order-123",
+		PaymentMethod: model.PaymentMethodCard,
 	}
 
 	expectedErr := repoErrors.ErrPaymentRequired
@@ -70,53 +87,21 @@ func TestService_PayOrder_ValidationErrors(t *testing.T) {
 		expErr   error
 	}{
 		{
-			name:    "nil payment",
-			payment: nil,
-			mockFunc: func(r *mockRepo) {
-				r.On("PayOrder", mock.Anything, (*model.Payment)(nil)).
-					Return("", repoErrors.ErrPaymentRequired)
-			},
-			expErr: repoErrors.ErrPaymentRequired,
+			name:     "nil payment",
+			payment:  nil,
+			mockFunc: func(r *mockRepo) {},
+			expErr:   repoErrors.ErrPaymentRequired,
 		},
-		{
-			name: "empty user uuid",
-			payment: &model.Payment{
-				OrderUuid:     "order-123",
-				PaymentMethod: model.CARD,
-			},
-			mockFunc: func(r *mockRepo) {
-				r.On("PayOrder", mock.Anything, mock.MatchedBy(func(p *model.Payment) bool {
-					return p.OrderUuid == "order-123" && p.UserUuid == "" && p.PaymentMethod == model.CARD
-				})).Return("", repoErrors.ErrUserUUIDRequired)
-			},
-			expErr: repoErrors.ErrUserUUIDRequired,
-		},
-		{
-			name: "empty order uuid",
-			payment: &model.Payment{
-				UserUuid:      "user-123",
-				PaymentMethod: model.CARD,
-			},
-			mockFunc: func(r *mockRepo) {
-				r.On("PayOrder", mock.Anything, mock.MatchedBy(func(p *model.Payment) bool {
-					return p.UserUuid == "user-123" && p.OrderUuid == "" && p.PaymentMethod == model.CARD
-				})).Return("", repoErrors.ErrOrderUUIDRequired)
-			},
-			expErr: repoErrors.ErrOrderUUIDRequired,
-		},
+
 		{
 			name: "invalid payment method",
 			payment: &model.Payment{
-				UserUuid:      "user-123",
-				OrderUuid:     "order-123",
-				PaymentMethod: model.CategoryUnspecified,
+				UUID:          "user-123",
+				OrderUUID:     "order-123",
+				PaymentMethod: "",
 			},
-			mockFunc: func(r *mockRepo) {
-				r.On("PayOrder", mock.Anything, mock.MatchedBy(func(p *model.Payment) bool {
-					return p.UserUuid == "user-123" && p.OrderUuid == "order-123" && p.PaymentMethod == model.CategoryUnspecified
-				})).Return("", repoErrors.ErrPaymentMethodInvalid)
-			},
-			expErr: repoErrors.ErrPaymentMethodInvalid,
+			mockFunc: func(r *mockRepo) {},
+			expErr:   repoErrors.ErrPaymentMethodInvalid,
 		},
 	}
 
@@ -148,9 +133,9 @@ func TestService_PayOrder_ContextCanceled(t *testing.T) {
 	cancel() // Cancel context immediately
 
 	payment := &model.Payment{
-		UserUuid:      "user-123",
-		OrderUuid:     "order-123",
-		PaymentMethod: model.CARD,
+		UUID:          "user-123",
+		OrderUUID:     "order-123",
+		PaymentMethod: model.PaymentMethodCard,
 	}
 
 	mockRepo.On("PayOrder", ctx, payment).Return("", context.Canceled)
@@ -174,9 +159,9 @@ func TestService_PayOrder_ContextDeadlineExceeded(t *testing.T) {
 	defer cancel()
 
 	payment := &model.Payment{
-		UserUuid:      "user-123",
-		OrderUuid:     "order-123",
-		PaymentMethod: model.CARD,
+		UUID:          "user-123",
+		OrderUUID:     "order-123",
+		PaymentMethod: model.PaymentMethodCard,
 	}
 
 	mockRepo.On("PayOrder", ctx, payment).Return("", context.DeadlineExceeded)

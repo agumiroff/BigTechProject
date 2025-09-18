@@ -62,11 +62,16 @@ func ToModelOrder(m *repomodel.Order) *model.Order {
 }
 
 func ToProtoPaymentMethod(m *model.PaymentMethod) paymentv1.PaymentMethod {
+	if m == nil {
+		return paymentv1.PaymentMethod_PAYMENT_METHOD_UNSPECIFIED
+	}
 	switch *m {
 	case model.PaymentMethodSBP:
 		return paymentv1.PaymentMethod_PAYMENT_METHOD_SBP
 	case model.PaymentMethodCARD:
 		return paymentv1.PaymentMethod_PAYMENT_METHOD_CARD
+	case model.PaymentMethodCREDITCARD:
+		return paymentv1.PaymentMethod_PAYMENT_METHOD_CREDIT_CARD
 	case model.PaymentMethodINVESTORMONEY:
 		return paymentv1.PaymentMethod_PAYMENT_METHOD_INVESTOR_MONEY
 	default:

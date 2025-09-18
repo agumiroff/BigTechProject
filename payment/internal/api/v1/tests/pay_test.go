@@ -47,9 +47,9 @@ func TestPayOrder_Success(t *testing.T) {
 
 	expectedTxID := "tx-123"
 	mockSvc.On("PayOrder", ctx, &model.Payment{
-		UserUuid:      "user-123",
-		OrderUuid:     "order-123",
-		PaymentMethod: model.CARD,
+		UUID:          "user-123",
+		OrderUUID:     "order-123",
+		PaymentMethod: model.PaymentMethodCard,
 	}).Return(expectedTxID, nil)
 
 	// Act
@@ -70,13 +70,10 @@ func TestPayOrder_ValidationErrors(t *testing.T) {
 		expErr   error
 	}{
 		{
-			name: "nil payment",
-			req:  &paymentv1.PayOrderRequest{Payment: nil},
-			mockFunc: func(s *mockService) {
-				s.On("PayOrder", mock.Anything, (*model.Payment)(nil)).
-					Return("", repoErrors.ErrPaymentRequired)
-			},
-			expErr: repoErrors.ErrPaymentRequired,
+			name:     "nil payment",
+			req:      &paymentv1.PayOrderRequest{Payment: nil},
+			mockFunc: func(s *mockService) {},
+			expErr:   repoErrors.ErrPaymentRequired,
 		},
 		{
 			name: "empty user uuid",
@@ -88,7 +85,7 @@ func TestPayOrder_ValidationErrors(t *testing.T) {
 			},
 			mockFunc: func(s *mockService) {
 				s.On("PayOrder", mock.Anything, mock.MatchedBy(func(p *model.Payment) bool {
-					return p.OrderUuid == "order-123" && p.UserUuid == "" && p.PaymentMethod == model.CARD
+					return p.OrderUUID == "order-123" && p.UUID == "" && p.PaymentMethod == model.PaymentMethodCard
 				})).Return("", repoErrors.ErrUserUUIDRequired)
 			},
 			expErr: repoErrors.ErrUserUUIDRequired,
@@ -103,7 +100,7 @@ func TestPayOrder_ValidationErrors(t *testing.T) {
 			},
 			mockFunc: func(s *mockService) {
 				s.On("PayOrder", mock.Anything, mock.MatchedBy(func(p *model.Payment) bool {
-					return p.UserUuid == "user-123" && p.OrderUuid == "" && p.PaymentMethod == model.CARD
+					return p.UUID == "user-123" && p.OrderUUID == "" && p.PaymentMethod == model.PaymentMethodCard
 				})).Return("", repoErrors.ErrOrderUUIDRequired)
 			},
 			expErr: repoErrors.ErrOrderUUIDRequired,
@@ -119,7 +116,7 @@ func TestPayOrder_ValidationErrors(t *testing.T) {
 			},
 			mockFunc: func(s *mockService) {
 				s.On("PayOrder", mock.Anything, mock.MatchedBy(func(p *model.Payment) bool {
-					return p.UserUuid == "user-123" && p.OrderUuid == "order-123" && p.PaymentMethod == model.CategoryUnspecified
+					return p.UUID == "user-123" && p.OrderUUID == "order-123" && p.PaymentMethod == ""
 				})).Return("", repoErrors.ErrPaymentMethodInvalid)
 			},
 			expErr: repoErrors.ErrPaymentMethodInvalid,

@@ -10,6 +10,21 @@ import (
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
+const (
+	getOrderStatusForUpdateQuery = `
+		SELECT status FROM orders WHERE order_uuid = $1
+	`
+	updateOrderQuery = `
+		UPDATE orders 
+		SET user_uuid = $1,
+			part_uuids = $2,
+			total_price = $3,
+			status = $4,
+			updated_at = NOW()
+		WHERE order_uuid = $5
+	`
+)
+
 func (r *repository) UpdateOrder(ctx context.Context, m *model.Order) error {
 	if m == nil {
 		return apperrors.ErrInvalidRequest
@@ -21,9 +36,7 @@ func (r *repository) UpdateOrder(ctx context.Context, m *model.Order) error {
 
 	// First check if order exists and get its current status
 	var currentStatus model.OrderStatus
-	err := r.db.QueryRowContext(ctx, `
-		SELECT status FROM orders WHERE order_uuid = $1
-	`, m.OrderUUID).Scan(&currentStatus)
+	err := r.db.QueryRowContext(ctx, getOrderStatusForUpdateQuery, m.OrderUUID).Scan(&currentStatus)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return apperrors.ErrNotFound
@@ -43,15 +56,8 @@ func (r *repository) UpdateOrder(ctx context.Context, m *model.Order) error {
 	}
 
 	// Update order
-	result, err := r.db.ExecContext(ctx, `
-		UPDATE orders 
-		SET user_uuid = $1,
-			part_uuids = $2,
-			total_price = $3,
-			status = $4,
-			updated_at = NOW()
-		WHERE order_uuid = $5
-	`, m.UserUUID, string(partUUIDsJSON), m.TotalPrice, m.Status, m.OrderUUID)
+	result, err := r.db.ExecContext(ctx, updateOrderQuery,
+		m.UserUUID, string(partUUIDsJSON), m.TotalPrice, m.Status, m.OrderUUID)
 	if err != nil {
 		return fmt.Errorf("failed to update order: %w", err)
 	}

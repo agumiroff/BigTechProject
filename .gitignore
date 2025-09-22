@@ -28,3 +28,6 @@ bin/
 bundles/
 node_modules/
 coverage/
+.DS_Store
+.env
+AGENTS.md

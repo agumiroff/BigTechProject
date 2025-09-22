@@ -4,39 +4,50 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/agumiroff/BigTechProject/inventory/v1/service"
-	invServiceV1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
+	api "github.com/agumiroff/BigTechProject/inventory/v1/internal/api/inventory/v1"
+	repository "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/part"
+	service "github.com/agumiroff/BigTechProject/inventory/v1/internal/service/part"
+	inventoryv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
 )
 
-const (
-	port = 50051
-)
+const grpcPort = 50051
 
-func StartGRPCServer() (*grpc.Server, net.Listener, error) {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+func StartGRPCServer() {
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
 	if err != nil {
-		log.Printf("failed to start listener: %v", err)
-		return nil, nil, err
+		log.Printf("failed to start listener %v\n", err)
+		return
 	}
 
 	s := grpc.NewServer()
 
-	invService := service.NewService()
-	invServiceV1.RegisterInventoryServiceServer(s, invService)
+	repo := repository.NewRepository()
+	service := service.NewService(repo)
+	api := api.NewAPI(service)
+
+	inventoryv1.RegisterInventoryServiceServer(s, api)
+
 	reflection.Register(s)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
 	go func() {
-		log.Printf("Starting grpc-server on port %d\n", port)
+		log.Printf("Starting grpc server on port %v", grpcPort)
 		err := s.Serve(lis)
 		if err != nil {
-			log.Printf("Failed to start grpc-server: %v\n", err)
-			return
+			log.Fatalf("failed to start server %v", err)
 		}
 	}()
 
-	return s, lis, nil
+	<-quit
+	log.Println("Shutting down grpc server")
+	s.GracefulStop()
+	log.Println("Server stopped")
 }

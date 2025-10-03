@@ -17,7 +17,7 @@ type repository struct {
 
 var _ rep.InvRepository = (*repository)(nil)
 
-func NewRepository(db *mongo.Database) *repository {
+func NewRepository(ctx context.Context, db *mongo.Database) *repository {
 	collection := db.Collection("inventory")
 
 	indexModels := []mongo.IndexModel{
@@ -27,10 +27,10 @@ func NewRepository(db *mongo.Database) *repository {
 		},
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	indexCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	_, err := collection.Indexes().CreateMany(ctx, indexModels)
+	_, err := collection.Indexes().CreateMany(indexCtx, indexModels)
 	if err != nil {
 		panic(err)
 	}

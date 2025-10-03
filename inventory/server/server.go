@@ -47,7 +47,7 @@ func StartGRPCServer(ctx context.Context, dbURI string, dbName string) {
 	}
 
 	// Initialize repository and service layers
-	repo := repository.NewRepository(db)
+	repo := repository.NewRepository(ctx, db)
 	svc := service.NewService(repo)
 	api := api.NewAPI(svc)
 

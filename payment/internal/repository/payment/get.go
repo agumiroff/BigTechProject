@@ -2,6 +2,7 @@ package payment
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,7 +21,7 @@ func (r *repository) GetPayment(ctx context.Context, uuid string) (*model.Paymen
 	var payment repomodel.Payment
 	err := r.collection.FindOne(ctx, bson.M{"uuid": uuid}).Decode(&payment)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, ErrPaymentNotFound
 		}
 		return nil, fmt.Errorf("failed to get payment: %w", err)

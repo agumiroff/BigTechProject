@@ -3,19 +3,21 @@ package order
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 
 	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
-func (r *repository) Get(ctx context.Context, uuid string) (*repomodel.Order, error) {
-	const query = `
+func (r *repository) GetOrder(ctx context.Context, uuid string) (order *repomodel.OrderRow, parts []string, err error) {
+	if uuid == "" {
+		return nil, nil, apperrors.ErrInvalidRequest
+	}
+
+	const orderQuery = `
 		SELECT 
 			order_uuid,
 			user_uuid,
-			part_uuids,
 			total_price,
 			status,
 			payment_method,
@@ -23,47 +25,46 @@ func (r *repository) Get(ctx context.Context, uuid string) (*repomodel.Order, er
 		FROM orders 
 		WHERE order_uuid = $1`
 
-	if uuid == "" {
-		return nil, apperrors.ErrInvalidRequest
-	}
+	const partsQuery = `
+		SELECT 
+			part_uuid
+		FROM order_parts 
+		WHERE order_uuid = $1`
 
-	var order repomodel.Order
-	var partUUIDsJSON string
-
-	var paymentMethod sql.NullString
-	var transactionUUID sql.NullString
-	err := r.db.QueryRowContext(ctx, query, uuid).Scan(
+	order = &repomodel.OrderRow{}
+	err = r.db.QueryRowContext(ctx, orderQuery, uuid).Scan(
 		&order.OrderUUID,
 		&order.UserUUID,
-		&partUUIDsJSON,
 		&order.TotalPrice,
 		&order.Status,
-		&paymentMethod,
-		&transactionUUID,
+		&order.PaymentMethod,
+		&order.TransactionUUID,
 	)
-
-	if paymentMethod.Valid {
-		order.PaymentMethod = repomodel.PaymentMethod(paymentMethod.String)
-	} else {
-		order.PaymentMethod = repomodel.PaymentMethodUNKNOWN
-	}
-
-	if transactionUUID.Valid {
-		order.TransactionUUID = ""
-	}
-
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, apperrors.ErrNotFound
+			return nil, nil, apperrors.ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get order: %w", err)
+		return nil, nil, fmt.Errorf("failed to get order: %w", err)
 	}
 
-	var partUUIDs []string
-	if err := json.Unmarshal([]byte(partUUIDsJSON), &partUUIDs); err != nil {
-		return nil, fmt.Errorf("failed to parse part UUIDs: %w", err)
+	// Get order parts
+	rows, err := r.db.QueryContext(ctx, partsQuery, uuid)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get order parts: %w", err)
 	}
-	order.PartUUIDs = partUUIDs
+	defer rows.Close()
 
-	return &order, nil
+	for rows.Next() {
+		var partUUID string
+		if err = rows.Scan(&partUUID); err != nil {
+			return nil, nil, fmt.Errorf("failed to scan part UUID: %w", err)
+		}
+		parts = append(parts, partUUID)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("error iterating order parts: %w", err)
+	}
+
+	return order, parts, nil
 }

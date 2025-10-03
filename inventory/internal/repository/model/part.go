@@ -32,7 +32,7 @@ type Value struct {
 }
 
 type Part struct {
-	Uuid          string
+	UUID          string
 	Name          string
 	Description   string
 	Price         float64
@@ -47,7 +47,7 @@ type Part struct {
 }
 
 type PartsFilter struct {
-	Uuids                 []string
+	UUIDs                 []string
 	Names                 []string
 	Categories            []Category
 	ManufacturerCountries []string

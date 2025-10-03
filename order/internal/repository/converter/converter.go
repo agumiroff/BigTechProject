@@ -2,7 +2,6 @@ package converter
 
 import (
 	"database/sql"
-	"encoding/json"
 	"time"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
@@ -16,15 +15,12 @@ func ModelPayToRepo(m *model.PayOrderRequest) *repomodel.PayOrderRequest {
 	}
 }
 
-func ModelOrderToRepo(m *model.Order) *repomodel.OrderRow {
-	// Serialize partUUIDs to JSON
-	partUUIDsJSON, _ := json.Marshal(m.PartUUIDs)
-
+func ModelOrderToRepo(m *model.Order) (*repomodel.OrderRow, []*repomodel.OrderParts) {
 	now := time.Now()
-	return &repomodel.OrderRow{
+
+	order := &repomodel.OrderRow{
 		OrderUUID:  m.OrderUUID,
 		UserUUID:   m.UserUUID,
-		PartUUIDs:  partUUIDsJSON,
 		TotalPrice: m.TotalPrice,
 		TransactionUUID: sql.NullString{
 			String: m.TransactionUUID,
@@ -36,16 +32,21 @@ func ModelOrderToRepo(m *model.Order) *repomodel.OrderRow {
 		},
 		Status:    string(m.Status),
 		CreatedAt: now,
-		UpdatedAt: sql.NullTime{
-			Time:  now,
-			Valid: true,
-		},
+		UpdatedAt: sql.NullTime{Time: now, Valid: true},
 	}
+
+	var orderParts []*repomodel.OrderParts
+	for _, part := range m.PartUUIDs { // m.Parts — []PartWithQty
+		orderParts = append(orderParts, &repomodel.OrderParts{
+			OrderUUID: order.OrderUUID,
+			PartUUID:  part,
+		})
+	}
+
+	return order, orderParts
 }
 
-func RepoOrderToModel(r *repomodel.OrderRow) *model.Order {
-	var partUUIDs []string
-	_ = json.Unmarshal(r.PartUUIDs, &partUUIDs)
+func RepoOrderToModel(r *repomodel.OrderRow, partUUIDs []string) *model.Order {
 
 	return &model.Order{
 		OrderUUID:       r.OrderUUID,

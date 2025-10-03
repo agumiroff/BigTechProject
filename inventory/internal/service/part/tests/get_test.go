@@ -79,7 +79,7 @@ func TestService_GetPart(t *testing.T) {
 			name: "empty uuid",
 			uuid: "",
 			setup: func(m *mocks.InvRepository) {
-				m.On("GetPart", mock.Anything, "").Return(&model.Part{}, errors.New("uuid is empty"))
+				// No repository call is expected because we check for empty UUID first
 			},
 			want:    &model.Part{},
 			wantErr: errors.New("uuid is empty"),

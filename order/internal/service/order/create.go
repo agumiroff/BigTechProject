@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/brianvoe/gofakeit/v6"
-
+	"github.com/agumiroff/BigTechProject/order/v1/internal/converter"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
 	inventoryv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
 )
@@ -42,14 +41,14 @@ func (s *service) CreateOrder(ctx context.Context, req *model.CreateOrderRequest
 	// Create order
 	order := &model.Order{
 		UserUUID:   req.UserUUID,
-		OrderUUID:  gofakeit.UUID(),
 		PartUUIDs:  partUUIDs,
 		TotalPrice: totalPrice,
 		Status:     model.OrderStatusPENDINGPAYMENT,
 	}
 
 	// Save order
-	response, err := s.Repo.CreateOrder(ctx, order)
+	orderRow := converter.ToRepoOrder(order)
+	id, err := s.Repo.CreateOrder(ctx, orderRow, order.PartUUIDs)
 	if err != nil {
 		log.Printf("Failed to create order in repository: %v", err)
 		return nil, fmt.Errorf("failed to create order: %w", err)
@@ -58,8 +57,8 @@ func (s *service) CreateOrder(ctx context.Context, req *model.CreateOrderRequest
 	log.Printf("Order created successfully: uuid=%s, total_price=%.2f", order.OrderUUID, order.TotalPrice)
 
 	return &model.CreateOrderResponse{
-		OrderUUID:  response.OrderUUID,
-		TotalPrice: response.TotalPrice,
+		OrderUUID:  id,
+		TotalPrice: totalPrice,
 	}, nil
 }
 

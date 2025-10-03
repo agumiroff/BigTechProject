@@ -29,5 +29,6 @@ func RepoToModel(r *repomodel.Payment) *model.Payment {
 		UUID:          r.UUID,
 		OrderUUID:     r.OrderUUID,
 		PaymentMethod: model.PaymentMethod(r.PaymentMethod),
+		Amount:        r.Amount,
 	}
 }

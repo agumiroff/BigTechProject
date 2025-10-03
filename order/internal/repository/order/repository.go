@@ -1,7 +1,7 @@
 package order
 
 import (
-	"github.com/agumiroff/BigTechProject/order/v1/internal/repository/db"
+	"github.com/agumiroff/BigTechProject/order/v1/internal/db"
 )
 
 type repository struct {

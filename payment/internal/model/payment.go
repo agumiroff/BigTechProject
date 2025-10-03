@@ -3,20 +3,20 @@ package model
 type PaymentStatus string
 
 const (
-	PaymentStatusPending    PaymentStatus = "PENDING"
-	PaymentStatusProcessing PaymentStatus = "PROCESSING"
-	PaymentStatusCompleted  PaymentStatus = "COMPLETED"
-	PaymentStatusFailed     PaymentStatus = "FAILED"
-	PaymentStatusRefunded   PaymentStatus = "REFUNDED"
+	PaymentStatusPending    PaymentStatus = "pending"
+	PaymentStatusProcessing PaymentStatus = "processing"
+	PaymentStatusCompleted  PaymentStatus = "completed"
+	PaymentStatusFailed     PaymentStatus = "failed"
+	PaymentStatusRefunded   PaymentStatus = "refunded"
 )
 
 type PaymentMethod string
 
 const (
-	PaymentMethodCard        PaymentMethod = "CARD"
-	PaymentMethodSBP         PaymentMethod = "SBP"
-	PaymentMethodCreditCard  PaymentMethod = "CREDIT_CARD"
-	PaymentMethodInvestMoney PaymentMethod = "INVEST_MONEY"
+	PaymentMethodCard        PaymentMethod = "card"
+	PaymentMethodSBP         PaymentMethod = "sbp"
+	PaymentMethodCreditCard  PaymentMethod = "credit_card"
+	PaymentMethodInvestMoney PaymentMethod = "invest_money"
 )
 
 type Payment struct {

@@ -15,7 +15,7 @@ func (a *api) ListParts(ctx context.Context, req *invV1.ListPartsRequest) (*invV
 		filter = &invV1.PartsFilter{}
 	}
 
-	list, err := a.service.ListParts(ctx, converter.FilterToModel(filter))
+	list, err := a.service.ListParts(ctx, converter.ToFilterModel(filter))
 	if err != nil {
 		log.Printf("failed to list parts %v", err)
 		return &invV1.ListPartsResponse{
@@ -24,6 +24,6 @@ func (a *api) ListParts(ctx context.Context, req *invV1.ListPartsRequest) (*invV
 	}
 
 	return &invV1.ListPartsResponse{
-		Parts: converter.ModelsToProto(list),
+		Parts: converter.ToProtoModels(list),
 	}, nil
 }

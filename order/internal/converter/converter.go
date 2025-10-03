@@ -1,6 +1,7 @@
 package converter
 
 import (
+	"database/sql"
 	"errors"
 
 	"github.com/google/uuid"
@@ -18,15 +19,19 @@ func ToModelCreateOrderRequest(req *OrderV1.CreateOrderRequest) *model.CreateOrd
 	}
 }
 
-func ToRepoOrder(m *model.Order) *repomodel.Order {
-	return &repomodel.Order{
-		OrderUUID:       m.OrderUUID,
-		UserUUID:        m.UserUUID,
-		PartUUIDs:       m.PartUUIDs,
-		TotalPrice:      m.TotalPrice,
-		TransactionUUID: m.TransactionUUID,
-		PaymentMethod:   repomodel.PaymentMethod(m.PaymentMethod),
-		Status:          repomodel.OrderStatus(m.Status),
+func ToRepoOrder(m *model.Order) *repomodel.OrderRow {
+	return &repomodel.OrderRow{
+		OrderUUID:  m.OrderUUID,
+		UserUUID:   m.UserUUID,
+		TotalPrice: m.TotalPrice,
+		TransactionUUID: sql.NullString{
+			String: m.TransactionUUID,
+		},
+		PaymentMethod: sql.NullString{
+			String: string(m.PaymentMethod),
+			Valid:  m.PaymentMethod != model.PaymentMethodUNKNOWN && m.PaymentMethod != "",
+		},
+		Status: string(m.Status),
 	}
 }
 
@@ -49,14 +54,14 @@ func ToProtoOrder(m *model.Order) (*OrderV1.Order, error) {
 	}, nil
 }
 
-func ToModelOrder(m *repomodel.Order) *model.Order {
+func ToModelOrder(m *repomodel.OrderRow, parts []string) *model.Order {
 	return &model.Order{
 		OrderUUID:       m.OrderUUID,
 		UserUUID:        m.UserUUID,
-		PartUUIDs:       m.PartUUIDs,
+		PartUUIDs:       parts,
 		TotalPrice:      m.TotalPrice,
-		TransactionUUID: m.TransactionUUID,
-		PaymentMethod:   model.PaymentMethod(m.PaymentMethod),
+		TransactionUUID: m.TransactionUUID.String,
+		PaymentMethod:   model.PaymentMethod(m.PaymentMethod.String),
 		Status:          model.OrderStatus(m.Status),
 	}
 }

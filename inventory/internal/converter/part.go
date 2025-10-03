@@ -5,15 +5,15 @@ import (
 	inventoryv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
 )
 
-func ModelsToProto(parts []*model.Part) []*inventoryv1.Part {
+func ToProtoModels(parts []*model.Part) []*inventoryv1.Part {
 	var protos []*inventoryv1.Part
 	for _, part := range parts {
-		protos = append(protos, ModelToProto(part))
+		protos = append(protos, ToProtoPart(part))
 	}
 	return protos
 }
 
-func FilterToProto(f *model.PartsFilter) *inventoryv1.PartsFilter {
+func ToFilterProto(f *model.PartsFilter) *inventoryv1.PartsFilter {
 	return &inventoryv1.PartsFilter{
 		Uuids:                 f.Uuids,
 		Names:                 f.Names,
@@ -23,7 +23,7 @@ func FilterToProto(f *model.PartsFilter) *inventoryv1.PartsFilter {
 	}
 }
 
-func FilterToModel(f *inventoryv1.PartsFilter) *model.PartsFilter {
+func ToFilterModel(f *inventoryv1.PartsFilter) *model.PartsFilter {
 	return &model.PartsFilter{
 		Uuids:                 f.Uuids,
 		Names:                 f.Names,
@@ -83,7 +83,7 @@ func ConvertProtoToModelCategory(c inventoryv1.Category) model.Category {
 	}
 }
 
-func ModelToProto(m *model.Part) *inventoryv1.Part {
+func ToProtoPart(m *model.Part) *inventoryv1.Part {
 	if m == nil {
 		return nil
 	}
@@ -107,13 +107,13 @@ func ModelToProto(m *model.Part) *inventoryv1.Part {
 			Website: m.Manufacturer.Website,
 		},
 		Tags:      append([]string{}, m.Tags...),
-		Metadata:  modelMetadataToProto(m.Metadata),
+		Metadata:  ToProtoMetadata(m.Metadata),
 		CreatedAt: m.CreatedAt,
 		UpdatedAt: m.UpdatedAt,
 	}
 }
 
-func ProtoToModel(p *inventoryv1.Part) *model.Part {
+func ToModelPart(p *inventoryv1.Part) *model.Part {
 	if p == nil {
 		return nil
 	}
@@ -137,13 +137,13 @@ func ProtoToModel(p *inventoryv1.Part) *model.Part {
 			Website: p.Manufacturer.Website,
 		},
 		Tags:      append([]string{}, p.Tags...),
-		Metadata:  protoMetadataToModel(p.Metadata),
+		Metadata:  ToModelMetadata(p.Metadata),
 		CreatedAt: p.CreatedAt,
 		UpdatedAt: p.UpdatedAt,
 	}
 }
 
-func modelMetadataToProto(meta map[string]*model.Value) map[string]*inventoryv1.Value {
+func ToProtoMetadata(meta map[string]*model.Value) map[string]*inventoryv1.Value {
 	if meta == nil {
 		return nil
 	}
@@ -161,7 +161,7 @@ func modelMetadataToProto(meta map[string]*model.Value) map[string]*inventoryv1.
 	return result
 }
 
-func protoMetadataToModel(meta map[string]*inventoryv1.Value) map[string]*model.Value {
+func ToModelMetadata(meta map[string]*inventoryv1.Value) map[string]*model.Value {
 	if meta == nil {
 		return nil
 	}

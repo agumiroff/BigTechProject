@@ -13,8 +13,8 @@ import (
 func (s *repository) ListParts(ctx context.Context, filter *repomodel.PartsFilter) ([]*model.Part, error) {
 	query := bson.M{}
 
-	if len(filter.Uuids) > 0 {
-		query["uuid"] = bson.M{"$in": filter.Uuids}
+	if len(filter.UUIDs) > 0 {
+		query["uuid"] = bson.M{"$in": filter.UUIDs}
 	}
 
 	if len(filter.Names) > 0 {

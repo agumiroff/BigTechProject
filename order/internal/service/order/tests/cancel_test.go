@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	mockex "github.com/agumiroff/BigTechProject/order/v1/external/repository/mocks"
+	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/repository/mocks"
 	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/service/order"
@@ -22,22 +23,21 @@ func TestCancelOrder_Success(t *testing.T) {
 
 	orderUUID := "test-order-uuid"
 
-	existingOrder := &repomodel.Order{
+	existingOrder := &repomodel.OrderRow{
 		OrderUUID:  orderUUID,
 		UserUUID:   "test-user",
-		PartUUIDs:  []string{"part1"},
 		TotalPrice: 100.0,
-		Status:     repomodel.OrderStatusPENDINGPAYMENT,
+		Status:     string(model.OrderStatusPENDINGPAYMENT),
 	}
+	parts := []string{"part1"}
 
 	// Mock get order
-	mockRepo.On("Get", ctx, orderUUID).Return(existingOrder, nil)
+	mockRepo.On("GetOrder", ctx, orderUUID).Return(existingOrder, parts, nil)
 
-	// Mock delete order
-	mockRepo.On("DeleteOrder", ctx, orderUUID).Return(nil)
+	// Mock cancel order
+	mockRepo.On("CancelOrder", ctx, orderUUID).Return(nil)
 
-	// Mock publish event
-	mockExRepo.On("PublishOrderEvent", ctx, orderUUID, existingOrder.UserUUID).Return(nil)
+	// No need to mock external publish event as it's not called in the CancelOrder method
 
 	// Act
 	err := svc.CancelOrder(ctx, orderUUID)
@@ -56,14 +56,14 @@ func TestCancelOrder_OrderNotFound(t *testing.T) {
 	orderUUID := "test-order-uuid"
 
 	// Mock get order not found
-	mockRepo.On("Get", ctx, orderUUID).Return(nil, repomodel.ErrOrderNotFound)
+	mockRepo.On("GetOrder", ctx, orderUUID).Return(nil, nil, errors.New("order not found"))
 
 	// Act
 	err := svc.CancelOrder(ctx, orderUUID)
 
 	// Assert
 	require.Error(t, err)
-	require.ErrorIs(t, err, repomodel.ErrOrderNotFound)
+	require.Contains(t, err.Error(), "order not found")
 }
 
 func TestCancelOrder_DeleteError(t *testing.T) {
@@ -76,19 +76,19 @@ func TestCancelOrder_DeleteError(t *testing.T) {
 	orderUUID := "test-order-uuid"
 	expectedErr := errors.New("delete error")
 
-	existingOrder := &repomodel.Order{
+	existingOrder := &repomodel.OrderRow{
 		OrderUUID:  orderUUID,
 		UserUUID:   "test-user",
-		PartUUIDs:  []string{"part1"},
 		TotalPrice: 100.0,
-		Status:     repomodel.OrderStatusPENDINGPAYMENT,
+		Status:     string(model.OrderStatusPENDINGPAYMENT),
 	}
+	parts := []string{"part1"}
 
 	// Mock get order success
-	mockRepo.On("Get", ctx, orderUUID).Return(existingOrder, nil)
+	mockRepo.On("GetOrder", ctx, orderUUID).Return(existingOrder, parts, nil)
 
-	// Mock delete error
-	mockRepo.On("DeleteOrder", ctx, orderUUID).Return(expectedErr)
+	// Mock cancel error
+	mockRepo.On("CancelOrder", ctx, orderUUID).Return(expectedErr)
 
 	// Act
 	err := svc.CancelOrder(ctx, orderUUID)
@@ -107,24 +107,24 @@ func TestCancelOrder_OrderAlreadyPaid(t *testing.T) {
 
 	orderUUID := "test-order-uuid"
 
-	existingOrder := &repomodel.Order{
+	existingOrder := &repomodel.OrderRow{
 		OrderUUID:  orderUUID,
 		UserUUID:   "test-user",
-		PartUUIDs:  []string{"part1"},
 		TotalPrice: 100.0,
-		Status:     repomodel.OrderStatusPAID,
+		Status:     string(model.OrderStatusPAID),
 	}
+	parts := []string{"part1"}
 
 	// Mock get order success
-	mockRepo.On("Get", ctx, orderUUID).Return(existingOrder, nil)
+	mockRepo.On("GetOrder", ctx, orderUUID).Return(existingOrder, parts, nil)
 
-	// Mock delete error
-	mockRepo.On("DeleteOrder", ctx, orderUUID).Return(repomodel.ErrOrderAlreadyPaid)
+	// This is a validation error in the service layer, so no mock needed for CancelOrder
+	// because the service should return error before calling CancelOrder
 
 	// Act
 	err := svc.CancelOrder(ctx, orderUUID)
 
 	// Assert
 	require.Error(t, err)
-	require.ErrorIs(t, err, repomodel.ErrOrderAlreadyPaid)
+	require.Contains(t, err.Error(), "forbidden")
 }

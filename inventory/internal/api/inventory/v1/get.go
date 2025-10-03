@@ -16,6 +16,6 @@ func (a *api) GetPart(ctx context.Context, req *inventoryv1.GetPartRequest) (res
 		return &inventoryv1.GetPartResponse{}, apperrors.Map(err)
 	}
 	return &inventoryv1.GetPartResponse{
-		Part: converter.ModelToProto(part),
+		Part: converter.ToProtoPart(part),
 	}, nil
 }

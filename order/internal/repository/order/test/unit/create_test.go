@@ -1,218 +1,195 @@
-package test
+package unit
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
-	"github.com/agumiroff/BigTechProject/order/v1/internal/repository/order/inmemory"
+	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
-func newTestOrder() *model.Order {
-	return &model.Order{
-		OrderUUID:  "test-order-uuid",
-		UserUUID:   "test-user-uuid",
-		PartUUIDs:  []string{"part1", "part2"},
-		TotalPrice: 100.50,
-		Status:     model.OrderStatusPENDINGPAYMENT,
-	}
-}
-
-func TestCreateOrderInMemory_Success(t *testing.T) {
+func TestCreateOrder_Success(t *testing.T) {
 	// Arrange
+	repo := NewInmemoryRepo()
 	ctx := context.Background()
-	repo := inmemory.NewInMemoryOrderRepository()
-	testOrder := newTestOrder()
+
+	orderUUID := "test-order-uuid"
+	userUUID := "test-user-uuid"
+	parts := []string{"part1", "part2"}
+	totalPrice := 100.0
+
+	order := &repomodel.OrderRow{
+		OrderUUID:  orderUUID,
+		UserUUID:   userUUID,
+		TotalPrice: totalPrice,
+		Status:     string(model.OrderStatusPENDINGPAYMENT),
+	}
 
 	// Act
-	resp, err := repo.CreateOrder(ctx, testOrder)
+	resp, err := repo.CreateOrder(ctx, order, parts)
 
 	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	assert.Equal(t, testOrder.OrderUUID, resp.OrderUUID)
-	assert.Equal(t, testOrder.TotalPrice, resp.TotalPrice)
+	assert.Equal(t, orderUUID, resp.OrderUUID)
+	assert.Equal(t, totalPrice, resp.TotalPrice)
 
 	// Verify order was stored
-	stored, err := repo.Get(ctx, testOrder.OrderUUID)
+	storedOrder, storedParts, err := repo.GetOrder(ctx, orderUUID)
 	require.NoError(t, err)
-	require.NotNil(t, stored)
-	assert.Equal(t, testOrder.UserUUID, stored.UserUUID)
-	assert.Equal(t, testOrder.PartUUIDs, stored.PartUUIDs)
-	assert.Equal(t, string(testOrder.Status), string(stored.Status))
+	require.NotNil(t, storedOrder)
+	assert.Equal(t, order.OrderUUID, storedOrder.OrderUUID)
+	assert.Equal(t, order.UserUUID, storedOrder.UserUUID)
+	assert.Equal(t, order.TotalPrice, storedOrder.TotalPrice)
+	assert.Equal(t, order.Status, storedOrder.Status)
+	assert.Equal(t, parts, storedParts)
 }
 
-func TestCreateOrderInMemory_DuplicateUUID(t *testing.T) {
+func TestCreateOrder_AlreadyExists(t *testing.T) {
 	// Arrange
+	repo := NewInmemoryRepo()
 	ctx := context.Background()
-	repo := inmemory.NewInMemoryOrderRepository()
-	existingOrder := &model.Order{
-		OrderUUID:  "same-uuid",
-		UserUUID:   "old-user",
-		PartUUIDs:  []string{"old-part"},
-		TotalPrice: 50.00,
-		Status:     model.OrderStatusPENDINGPAYMENT,
+
+	orderUUID := "test-order-uuid"
+	userUUID := "test-user-uuid"
+	parts := []string{"part1", "part2"}
+	totalPrice := 100.0
+
+	order := &repomodel.OrderRow{
+		OrderUUID:  orderUUID,
+		UserUUID:   userUUID,
+		TotalPrice: totalPrice,
+		Status:     string(model.OrderStatusPENDINGPAYMENT),
 	}
 
-	// Create initial order
-	_, err := repo.CreateOrder(ctx, existingOrder)
+	// Create the first order
+	_, err := repo.CreateOrder(ctx, order, parts)
 	require.NoError(t, err)
 
-	// Try to create another order with same UUID
-	newOrder := &model.Order{
-		OrderUUID:  "same-uuid",
-		UserUUID:   "new-user",
-		PartUUIDs:  []string{"new-part"},
-		TotalPrice: 150.00,
-		Status:     model.OrderStatusPAID,
-	}
-
-	// Act
-	resp, err := repo.CreateOrder(ctx, newOrder)
+	// Act - Try to create order with the same UUID
+	resp, err := repo.CreateOrder(ctx, order, parts)
 
 	// Assert
 	require.Error(t, err)
+	assert.ErrorIs(t, err, apperrors.ErrAlreadyExists)
 	assert.Nil(t, resp)
+}
 
-	// Verify original order is unchanged
-	stored, err := repo.Get(ctx, existingOrder.OrderUUID)
+func TestCreateOrder_InvalidRequest_NilOrder(t *testing.T) {
+	// Arrange
+	repo := NewInmemoryRepo()
+	ctx := context.Background()
+
+	// Act
+	resp, err := repo.CreateOrder(ctx, nil, []string{"part1"})
+
+	// Assert
+	require.Error(t, err)
+	assert.ErrorIs(t, err, apperrors.ErrInvalidRequest)
+	assert.Nil(t, resp)
+}
+
+func TestCreateOrder_InvalidRequest_EmptyUUID(t *testing.T) {
+	// Arrange
+	repo := NewInmemoryRepo()
+	ctx := context.Background()
+
+	order := &repomodel.OrderRow{
+		OrderUUID:  "", // Empty UUID
+		UserUUID:   "test-user-uuid",
+		TotalPrice: 100.0,
+		Status:     string(model.OrderStatusPENDINGPAYMENT),
+	}
+
+	// Act
+	resp, err := repo.CreateOrder(ctx, order, []string{"part1"})
+
+	// Assert
+	require.Error(t, err)
+	assert.ErrorIs(t, err, apperrors.ErrInvalidRequest)
+	assert.Nil(t, resp)
+}
+
+func TestCreateOrder_InvalidRequest_EmptyUserUUID(t *testing.T) {
+	// Arrange
+	repo := NewInmemoryRepo()
+	ctx := context.Background()
+
+	order := &repomodel.OrderRow{
+		OrderUUID:  "test-order-uuid",
+		UserUUID:   "", // Empty UserUUID
+		TotalPrice: 100.0,
+		Status:     string(model.OrderStatusPENDINGPAYMENT),
+	}
+
+	// Act
+	resp, err := repo.CreateOrder(ctx, order, []string{"part1"})
+
+	// Assert
+	require.Error(t, err)
+	assert.ErrorIs(t, err, apperrors.ErrInvalidRequest)
+	assert.Nil(t, resp)
+}
+
+func TestCreateOrder_InvalidRequest_EmptyParts(t *testing.T) {
+	// Arrange
+	repo := NewInmemoryRepo()
+	ctx := context.Background()
+
+	order := &repomodel.OrderRow{
+		OrderUUID:  "test-order-uuid",
+		UserUUID:   "test-user-uuid",
+		TotalPrice: 100.0,
+		Status:     string(model.OrderStatusPENDINGPAYMENT),
+	}
+
+	// Act
+	resp, err := repo.CreateOrder(ctx, order, []string{}) // Empty parts
+
+	// Assert
+	require.Error(t, err)
+	assert.ErrorIs(t, err, apperrors.ErrInvalidRequest)
+	assert.Nil(t, resp)
+}
+
+func TestCreateOrder_WithNullFields(t *testing.T) {
+	// Arrange
+	repo := NewInmemoryRepo()
+	ctx := context.Background()
+
+	orderUUID := "test-order-uuid"
+	userUUID := "test-user-uuid"
+	parts := []string{"part1"}
+	totalPrice := 100.0
+
+	order := &repomodel.OrderRow{
+		OrderUUID:  orderUUID,
+		UserUUID:   userUUID,
+		TotalPrice: totalPrice,
+		Status:     string(model.OrderStatusPENDINGPAYMENT),
+		// SQL null values
+		TransactionUUID: sql.NullString{Valid: false},
+		PaymentMethod:   sql.NullString{Valid: false},
+	}
+
+	// Act
+	resp, err := repo.CreateOrder(ctx, order, parts)
+
+	// Assert
 	require.NoError(t, err)
-	require.NotNil(t, stored)
-	assert.Equal(t, existingOrder.UserUUID, stored.UserUUID)
-	assert.Equal(t, existingOrder.PartUUIDs, stored.PartUUIDs)
-	assert.Equal(t, string(existingOrder.Status), string(stored.Status))
-}
+	require.NotNil(t, resp)
+	assert.Equal(t, orderUUID, resp.OrderUUID)
+	assert.Equal(t, totalPrice, resp.TotalPrice)
 
-func TestCreateOrderInMemory_NilOrder(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	repo := inmemory.NewInMemoryOrderRepository()
-
-	// Act
-	resp, err := repo.CreateOrder(ctx, nil)
-
-	// Assert
-	assert.Error(t, err)
-	assert.Nil(t, resp)
-}
-
-func TestCreateOrderInMemory_EmptyOrderUUID(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	repo := inmemory.NewInMemoryOrderRepository()
-	invalidOrder := &model.Order{
-		UserUUID:   "test-user",
-		PartUUIDs:  []string{"part1"},
-		TotalPrice: 100,
-		Status:     model.OrderStatusPENDINGPAYMENT,
-	}
-
-	// Act
-	resp, err := repo.CreateOrder(ctx, invalidOrder)
-
-	// Assert
-	assert.Error(t, err)
-	assert.Nil(t, resp)
-}
-
-func TestCreateOrderInMemory_EmptyUserUUID(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	repo := inmemory.NewInMemoryOrderRepository()
-	invalidOrder := &model.Order{
-		OrderUUID:  "test-uuid",
-		PartUUIDs:  []string{"part1"},
-		TotalPrice: 100,
-		Status:     model.OrderStatusPENDINGPAYMENT,
-	}
-
-	// Act
-	resp, err := repo.CreateOrder(ctx, invalidOrder)
-
-	// Assert
-	assert.Error(t, err)
-	assert.Nil(t, resp)
-}
-
-func TestCreateOrderInMemory_EmptyPartUUIDs(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	repo := inmemory.NewInMemoryOrderRepository()
-	invalidOrder := &model.Order{
-		OrderUUID:  "test-uuid",
-		UserUUID:   "test-user",
-		TotalPrice: 100,
-		Status:     model.OrderStatusPENDINGPAYMENT,
-	}
-
-	// Act
-	resp, err := repo.CreateOrder(ctx, invalidOrder)
-
-	// Assert
-	assert.Error(t, err)
-	assert.Nil(t, resp)
-}
-
-func TestCreateOrderInMemory_ValidationErrors(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	repo := inmemory.NewInMemoryOrderRepository()
-
-	tests := []struct {
-		name        string
-		order       *model.Order
-		expectedErr error
-	}{
-		{
-			name:        "nil order",
-			order:       nil,
-			expectedErr: apperrors.ErrInvalidRequest,
-		},
-		{
-			name: "empty order UUID",
-			order: &model.Order{
-				UserUUID:   "test-user",
-				PartUUIDs:  []string{"part1"},
-				TotalPrice: 100,
-				Status:     model.OrderStatusPENDINGPAYMENT,
-			},
-			expectedErr: apperrors.ErrInvalidRequest,
-		},
-		{
-			name: "empty user UUID",
-			order: &model.Order{
-				OrderUUID:  "test-uuid",
-				PartUUIDs:  []string{"part1"},
-				TotalPrice: 100,
-				Status:     model.OrderStatusPENDINGPAYMENT,
-			},
-			expectedErr: apperrors.ErrInvalidRequest,
-		},
-		{
-			name: "empty part UUIDs",
-			order: &model.Order{
-				OrderUUID:  "test-uuid",
-				UserUUID:   "test-user",
-				TotalPrice: 100,
-				Status:     model.OrderStatusPENDINGPAYMENT,
-			},
-			expectedErr: apperrors.ErrInvalidRequest,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Act
-			resp, err := repo.CreateOrder(ctx, tt.order)
-
-			// Assert
-			assert.Error(t, err)
-			assert.ErrorIs(t, err, tt.expectedErr)
-			assert.Nil(t, resp)
-		})
-	}
+	// Verify order was stored with null fields
+	storedOrder, _, err := repo.GetOrder(ctx, orderUUID)
+	require.NoError(t, err)
+	require.NotNil(t, storedOrder)
+	assert.Equal(t, false, storedOrder.TransactionUUID.Valid)
+	assert.Equal(t, false, storedOrder.PaymentMethod.Valid)
 }

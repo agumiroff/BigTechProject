@@ -3,10 +3,9 @@ package order
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 
-	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
+	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
@@ -17,15 +16,16 @@ const (
 	updateOrderQuery = `
 		UPDATE orders 
 		SET user_uuid = $1,
-			part_uuids = $2,
-			total_price = $3,
-			status = $4,
-			updated_at = NOW()
-		WHERE order_uuid = $5
+			total_price = $2,
+			status = $3,
+			updated_at = NOW(),
+			transaction_uuid = $4,
+			payment_method = $5
+		WHERE order_uuid = $6
 	`
 )
 
-func (r *repository) UpdateOrder(ctx context.Context, m *model.Order) error {
+func (r *repository) UpdateOrder(ctx context.Context, m *repomodel.OrderRow) error {
 	if m == nil {
 		return apperrors.ErrInvalidRequest
 	}
@@ -35,7 +35,7 @@ func (r *repository) UpdateOrder(ctx context.Context, m *model.Order) error {
 	}
 
 	// First check if order exists and get its current status
-	var currentStatus model.OrderStatus
+	var currentStatus string
 	err := r.db.QueryRowContext(ctx, getOrderStatusForUpdateQuery, m.OrderUUID).Scan(&currentStatus)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -44,20 +44,19 @@ func (r *repository) UpdateOrder(ctx context.Context, m *model.Order) error {
 		return fmt.Errorf("failed to get order status: %w", err)
 	}
 
-	if currentStatus == model.OrderStatusPAID &&
-		m.Status != model.OrderStatusCANCELLED {
+	if currentStatus == string(repomodel.OrderStatusPAID) &&
+		m.Status != string(repomodel.OrderStatusCANCELLED) {
 		return apperrors.ErrForbidden
-	}
-
-	// Convert part UUIDs to JSON
-	partUUIDsJSON, err := json.Marshal(m.PartUUIDs)
-	if err != nil {
-		return fmt.Errorf("failed to marshal part UUIDs: %w", err)
 	}
 
 	// Update order
 	result, err := r.db.ExecContext(ctx, updateOrderQuery,
-		m.UserUUID, string(partUUIDsJSON), m.TotalPrice, m.Status, m.OrderUUID)
+		m.UserUUID,
+		m.TotalPrice,
+		m.Status,
+		m.TransactionUUID.String,
+		m.PaymentMethod.String,
+		m.OrderUUID)
 	if err != nil {
 		return fmt.Errorf("failed to update order: %w", err)
 	}

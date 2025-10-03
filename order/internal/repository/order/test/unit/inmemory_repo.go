@@ -1,7 +1,8 @@
-package test
+package unit
 
 import (
 	"context"
+	"database/sql"
 	"sync"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
@@ -9,19 +10,24 @@ import (
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
+type OrderData struct {
+	Order *repomodel.OrderRow
+	Parts []string
+}
+
 type inMemoryRepo struct {
 	mu      sync.RWMutex
-	storage map[string]*repomodel.Order
+	storage map[string]OrderData
 }
 
 func NewInmemoryRepo() *inMemoryRepo {
 	return &inMemoryRepo{
 		mu:      sync.RWMutex{},
-		storage: make(map[string]*repomodel.Order),
+		storage: make(map[string]OrderData),
 	}
 }
 
-func (r *inMemoryRepo) CreateOrder(ctx context.Context, order *model.Order) (*model.CreateOrderResponse, error) {
+func (r *inMemoryRepo) CreateOrder(ctx context.Context, order *repomodel.OrderRow, parts []string) (*model.CreateOrderResponse, error) {
 	if order == nil {
 		return nil, apperrors.ErrInvalidRequest
 	}
@@ -30,7 +36,7 @@ func (r *inMemoryRepo) CreateOrder(ctx context.Context, order *model.Order) (*mo
 		return nil, apperrors.ErrInvalidRequest
 	}
 
-	if order.UserUUID == "" || len(order.PartUUIDs) == 0 {
+	if order.UserUUID == "" || len(parts) == 0 {
 		return nil, apperrors.ErrInvalidRequest
 	}
 
@@ -41,14 +47,9 @@ func (r *inMemoryRepo) CreateOrder(ctx context.Context, order *model.Order) (*mo
 		return nil, apperrors.ErrAlreadyExists
 	}
 
-	r.storage[order.OrderUUID] = &repomodel.Order{
-		OrderUUID:       order.OrderUUID,
-		UserUUID:        order.UserUUID,
-		PartUUIDs:       order.PartUUIDs,
-		TotalPrice:      order.TotalPrice,
-		Status:          repomodel.OrderStatus(order.Status),
-		PaymentMethod:   repomodel.PaymentMethod(order.PaymentMethod),
-		TransactionUUID: order.TransactionUUID,
+	r.storage[order.OrderUUID] = OrderData{
+		Order: order,
+		Parts: parts,
 	}
 
 	return &model.CreateOrderResponse{
@@ -57,23 +58,23 @@ func (r *inMemoryRepo) CreateOrder(ctx context.Context, order *model.Order) (*mo
 	}, nil
 }
 
-func (r *inMemoryRepo) Get(ctx context.Context, uuid string) (*repomodel.Order, error) {
+func (r *inMemoryRepo) GetOrder(ctx context.Context, uuid string) (*repomodel.OrderRow, []string, error) {
 	if uuid == "" {
-		return nil, apperrors.ErrInvalidRequest
+		return nil, nil, apperrors.ErrInvalidRequest
 	}
 
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	order, exists := r.storage[uuid]
+	orderData, exists := r.storage[uuid]
 	if !exists {
-		return nil, apperrors.ErrNotFound
+		return nil, nil, apperrors.ErrNotFound
 	}
 
-	return order, nil
+	return orderData.Order, orderData.Parts, nil
 }
 
-func (r *inMemoryRepo) UpdateOrder(ctx context.Context, order *model.Order) error {
+func (r *inMemoryRepo) UpdateOrder(ctx context.Context, order *repomodel.OrderRow) error {
 	if order == nil {
 		return apperrors.ErrInvalidRequest
 	}
@@ -85,29 +86,23 @@ func (r *inMemoryRepo) UpdateOrder(ctx context.Context, order *model.Order) erro
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	existing, exists := r.storage[order.OrderUUID]
+	orderData, exists := r.storage[order.OrderUUID]
 	if !exists {
 		return apperrors.ErrNotFound
 	}
 
-	if existing.Status == repomodel.OrderStatusCANCELLED {
+	if orderData.Order.Status == string(model.OrderStatusCANCELLED) {
 		return apperrors.ErrForbidden
 	}
 
-	if existing.Status == repomodel.OrderStatusPAID &&
-		order.Status != model.OrderStatusCANCELLED {
+	if orderData.Order.Status == string(model.OrderStatusPAID) &&
+		order.Status != string(model.OrderStatusCANCELLED) {
 		return apperrors.ErrForbidden
 	}
 
-	r.storage[order.OrderUUID] = &repomodel.Order{
-		OrderUUID:       order.OrderUUID,
-		UserUUID:        order.UserUUID,
-		PartUUIDs:       order.PartUUIDs,
-		TotalPrice:      order.TotalPrice,
-		Status:          repomodel.OrderStatus(order.Status),
-		PaymentMethod:   repomodel.PaymentMethod(order.PaymentMethod),
-		TransactionUUID: order.TransactionUUID,
-	}
+	// Update order keeping parts
+	orderData.Order = order
+	r.storage[order.OrderUUID] = orderData
 
 	return nil
 }
@@ -120,12 +115,12 @@ func (r *inMemoryRepo) DeleteOrder(ctx context.Context, uuid string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	existing, exists := r.storage[uuid]
+	orderData, exists := r.storage[uuid]
 	if !exists {
 		return apperrors.ErrNotFound
 	}
 
-	if existing.Status == repomodel.OrderStatusCANCELLED {
+	if orderData.Order.Status == string(model.OrderStatusCANCELLED) {
 		return apperrors.ErrForbidden
 	}
 
@@ -141,21 +136,29 @@ func (r *inMemoryRepo) CancelOrder(ctx context.Context, uuid string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	order, exists := r.storage[uuid]
+	orderData, exists := r.storage[uuid]
 	if !exists {
 		return apperrors.ErrNotFound
 	}
 
-	if order.Status == repomodel.OrderStatusCANCELLED {
+	if orderData.Order.Status == string(model.OrderStatusCANCELLED) {
 		return apperrors.ErrForbidden
 	}
 
-	if order.Status == repomodel.OrderStatusPAID {
+	if orderData.Order.Status == string(model.OrderStatusPAID) {
 		return apperrors.ErrForbidden
 	}
 
-	order.Status = repomodel.OrderStatusCANCELLED
-	r.storage[uuid] = order
+	orderData.Order.Status = string(model.OrderStatusCANCELLED)
+	r.storage[uuid] = orderData
 
 	return nil
+}
+
+// Helper function to create a SQL null string
+func nullString(s string) sql.NullString {
+	return sql.NullString{
+		String: s,
+		Valid:  s != "",
+	}
 }

@@ -33,16 +33,16 @@ func TestPayOrder_Success(t *testing.T) {
 		PaymentMethod: model.PaymentMethodCARD,
 	}
 
-	existingOrder := &repomodel.Order{
+	existingOrder := &repomodel.OrderRow{
 		OrderUUID:  orderUUID,
 		UserUUID:   "test-user",
-		PartUUIDs:  []string{"part1"},
 		TotalPrice: 100.0,
-		Status:     repomodel.OrderStatusPENDINGPAYMENT,
+		Status:     string(model.OrderStatusPENDINGPAYMENT),
 	}
+	parts := []string{"part1"}
 
 	// Mock get order (initial status check)
-	mockRepo.On("Get", ctx, orderUUID).Return(existingOrder, nil)
+	mockRepo.On("GetOrder", ctx, orderUUID).Return(existingOrder, parts, nil)
 
 	// Mock payment service response
 	mockExRepo.On("PayOrder", ctx, mock.MatchedBy(func(req *paymentv1.PayOrderRequest) bool {
@@ -57,20 +57,17 @@ func TestPayOrder_Success(t *testing.T) {
 	}, nil)
 
 	// Mock update order
-	mockRepo.On("UpdateOrder", ctx, mock.MatchedBy(func(order *model.Order) bool {
+	mockRepo.On("UpdateOrder", ctx, mock.MatchedBy(func(order *repomodel.OrderRow) bool {
 		return order != nil &&
 			order.OrderUUID == orderUUID &&
-			order.Status == model.OrderStatusPAID &&
-			order.PaymentMethod == model.PaymentMethodCARD &&
-			order.TransactionUUID == transactionUUID &&
+			order.Status == string(model.OrderStatusPAID) &&
+			order.PaymentMethod.String == string(model.PaymentMethodCARD) &&
+			order.TransactionUUID.String == transactionUUID &&
 			order.UserUUID == existingOrder.UserUUID &&
-			order.TotalPrice == existingOrder.TotalPrice &&
-			len(order.PartUUIDs) == len(existingOrder.PartUUIDs) &&
-			order.PartUUIDs[0] == existingOrder.PartUUIDs[0]
+			order.TotalPrice == existingOrder.TotalPrice
 	})).Return(nil)
 
-	// Mock publish event
-	mockExRepo.On("PublishOrderEvent", ctx, orderUUID, existingOrder.UserUUID).Return(nil)
+	// No need to mock external publish event as interface doesn't support it
 
 	// Act
 	resp, err := svc.PayOrder(ctx, req)
@@ -102,7 +99,7 @@ func TestPayOrder_PaymentError(t *testing.T) {
 	}
 
 	// Mock get order not found
-	mockRepo.On("Get", ctx, orderUUID).Return(nil, apperrors.ErrNotFound)
+	mockRepo.On("GetOrder", ctx, orderUUID).Return(nil, nil, apperrors.ErrNotFound)
 
 	// Act
 	resp, err := svc.PayOrder(ctx, req)
@@ -131,7 +128,7 @@ func TestPayOrder_OrderNotFound(t *testing.T) {
 	}
 
 	// Mock get order not found
-	mockRepo.On("Get", ctx, orderUUID).Return(nil, apperrors.ErrNotFound)
+	mockRepo.On("GetOrder", ctx, orderUUID).Return(nil, nil, apperrors.ErrNotFound)
 
 	// Act
 	resp, err := svc.PayOrder(ctx, req)
@@ -160,18 +157,18 @@ func TestPayOrder_UpdateError(t *testing.T) {
 		PaymentMethod: model.PaymentMethodCARD,
 	}
 
-	existingOrder := &repomodel.Order{
+	existingOrder := &repomodel.OrderRow{
 		OrderUUID:  orderUUID,
 		UserUUID:   "test-user",
-		PartUUIDs:  []string{"part1"},
 		TotalPrice: 100.0,
-		Status:     repomodel.OrderStatusPENDINGPAYMENT,
+		Status:     string(model.OrderStatusPENDINGPAYMENT),
 	}
+	parts := []string{"part1"}
 
 	expectedErr := errors.New("update error")
 
 	// Mock get order success
-	mockRepo.On("Get", ctx, orderUUID).Return(existingOrder, nil)
+	mockRepo.On("GetOrder", ctx, orderUUID).Return(existingOrder, parts, nil)
 
 	// Mock payment service response
 	mockExRepo.On("PayOrder", ctx, mock.MatchedBy(func(req *paymentv1.PayOrderRequest) bool {
@@ -186,16 +183,14 @@ func TestPayOrder_UpdateError(t *testing.T) {
 	}, nil)
 
 	// Mock update error
-	mockRepo.On("UpdateOrder", ctx, mock.MatchedBy(func(order *model.Order) bool {
+	mockRepo.On("UpdateOrder", ctx, mock.MatchedBy(func(order *repomodel.OrderRow) bool {
 		return order != nil &&
 			order.OrderUUID == orderUUID &&
-			order.Status == model.OrderStatusPAID &&
-			order.PaymentMethod == model.PaymentMethodCARD &&
-			order.TransactionUUID == transactionUUID &&
+			order.Status == string(model.OrderStatusPAID) &&
+			order.PaymentMethod.String == string(model.PaymentMethodCARD) &&
+			order.TransactionUUID.String == transactionUUID &&
 			order.UserUUID == existingOrder.UserUUID &&
-			order.TotalPrice == existingOrder.TotalPrice &&
-			len(order.PartUUIDs) == len(existingOrder.PartUUIDs) &&
-			order.PartUUIDs[0] == existingOrder.PartUUIDs[0]
+			order.TotalPrice == existingOrder.TotalPrice
 	})).Return(expectedErr)
 
 	// Act

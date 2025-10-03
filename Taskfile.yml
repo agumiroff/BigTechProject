@@ -114,14 +114,6 @@ tasks:
 
   lint:
     desc: "Запускает golangci-lint для всех модулей"
-    summary: |
-      Запускает линтер golangci-lint для всех модулей проекта.
-      Линтер проверяет код на соответствие стандартам качества и лучшим практикам.
-      Проверка включает проверку безопасности через gosec (встроенный в golangci-lint).
-      
-      Зависимости:
-        - install-golangci-lint: автоматически устанавливает линтер
-        - format: форматирует код перед проверкой
     deps: [ install-golangci-lint ]
     vars:
       MODULES: '{{.MODULES}}'
@@ -134,7 +126,10 @@ tasks:
         for mod in {{.MODULES}}; do
           if [ -d "$mod" ]; then
             echo "🔍 Линтим $mod module"
-            {{.GOLANGCI_LINT}} run $mod/... --config=.golangci.yml || ERR=1
+            (
+              cd $mod
+              {{.GOLANGCI_LINT}} run ./... --config=../.golangci.yml || ERR=1
+            )
           fi
         done
         exit $ERR

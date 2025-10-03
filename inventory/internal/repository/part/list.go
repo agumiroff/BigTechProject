@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -37,7 +38,16 @@ func (s *repository) ListParts(ctx context.Context, filter *repomodel.PartsFilte
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer func() {
+		if closeErr := cursor.Close(ctx); closeErr != nil {
+			// Only update err if it's nil - don't override actual query errors
+			if err == nil {
+				err = closeErr
+			} else {
+				log.Printf("failed to close cursor: %v", closeErr)
+			}
+		}
+	}()
 
 	var repoParts []*repomodel.Part
 	if err = cursor.All(ctx, &repoParts); err != nil {

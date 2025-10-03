@@ -84,10 +84,10 @@ func TestServiceList(t *testing.T) {
 			},
 			setup: func(m *mocks.InvRepository) {
 				m.On("ListParts", mock.Anything, mock.MatchedBy(func(f *repomodel.PartsFilter) bool {
-					if len(f.Uuids) != 1 {
+					if len(f.UUIDs) != 1 {
 						return false
 					}
-					return f.Uuids[0] == "test-uuid"
+					return f.UUIDs[0] == "test-uuid"
 				})).Return([]*model.Part{}, nil)
 			},
 			want:    []*model.Part{},

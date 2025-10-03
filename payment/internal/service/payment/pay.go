@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/agumiroff/BigTechProject/payment/v1/internal/model"
-	"github.com/agumiroff/BigTechProject/shared/apperrors"
+	"github.com/agumiroff/BigTechProject/payment/v1/internal/repository/payment"
 )
 
 func (s *service) PayOrder(ctx context.Context, p *model.Payment) (string, error) {
@@ -15,7 +15,6 @@ func (s *service) PayOrder(ctx context.Context, p *model.Payment) (string, error
 
 	res, err := s.Repo.PayOrder(ctx, p)
 	if err != nil {
-		log.Printf("failed to pay order %v", err)
 		return "", err
 	}
 
@@ -24,17 +23,21 @@ func (s *service) PayOrder(ctx context.Context, p *model.Payment) (string, error
 
 func validatePayment(p *model.Payment) error {
 	if p == nil {
-		return apperrors.ErrInvalidRequest
+		log.Printf("Payment validation failed: payment is nil")
+		return payment.ErrPaymentRequired
 	}
 
-	if p.OrderUuid == "" || p.UserUuid == "" {
-		return apperrors.ErrInvalidRequest
+	if p.OrderUUID == "" {
+		log.Printf("Payment validation failed: OrderUUID is empty")
+		return payment.ErrOrderUUIDRequired
 	}
 
 	switch p.PaymentMethod {
-	case model.CARD, model.SBP, model.CreditCard, model.InvestorMoney:
+	case model.PaymentMethodCard, model.PaymentMethodSBP, model.PaymentMethodCreditCard, model.PaymentMethodInvestMoney:
+		log.Printf("Payment validation successful: Valid payment method: %s", p.PaymentMethod)
 		return nil
 	default:
-		return apperrors.ErrInvalidRequest
+		log.Printf("Payment validation failed: Invalid payment method: %s", p.PaymentMethod)
+		return payment.ErrPaymentMethodInvalid
 	}
 }

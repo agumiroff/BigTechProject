@@ -13,11 +13,11 @@ func (s *service) GetOrder(ctx context.Context, uuid string) (*model.Order, erro
 	if uuid == "" {
 		return nil, apperrors.ErrInvalidRequest
 	}
-	order, err := s.Repo.Get(ctx, uuid)
+	order, parts, err := s.Repo.GetOrder(ctx, uuid)
 	if err != nil {
 		log.Printf("failed to get order %v: %v", uuid, err)
 		return nil, err
 	}
 
-	return converter.ToModelOrder(order), nil
+	return converter.ToModelOrder(order, parts), nil
 }

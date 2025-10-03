@@ -1,0 +1,5 @@
+{
+    "command": "dropIndexes",
+    "collection": "payments",
+    "index": "uuid_order_uuid_uniq"
+}

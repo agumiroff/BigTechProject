@@ -11,6 +11,7 @@ import (
 	mockex "github.com/agumiroff/BigTechProject/order/v1/external/repository/mocks"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/repository/mocks"
+	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/service/order"
 	inventoryv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
 )
@@ -48,15 +49,13 @@ func TestCreateOrder_Success(t *testing.T) {
 	}, nil)
 
 	// Mock internal repo response
-	mockRepo.On("CreateOrder", mock.Anything, mock.MatchedBy(func(order *model.Order) bool {
-		return order.UserUUID == req.UserUUID &&
-			len(order.PartUUIDs) == len(req.PartUUIDs) &&
-			order.TotalPrice == 125.0 &&
-			order.Status == model.OrderStatusPENDINGPAYMENT
-	})).Return(&model.CreateOrderResponse{
-		OrderUUID:  "test-uuid",
-		TotalPrice: 125.0,
-	}, nil)
+	mockRepo.On("CreateOrder", mock.Anything, mock.MatchedBy(func(orderRow *repomodel.OrderRow) bool {
+		return orderRow.UserUUID == req.UserUUID &&
+			orderRow.TotalPrice == 125.0 &&
+			orderRow.Status == string(model.OrderStatusPENDINGPAYMENT)
+	}), mock.MatchedBy(func(parts []string) bool {
+		return len(parts) == len(req.PartUUIDs)
+	})).Return("test-uuid", nil)
 
 	// Act
 	resp, err := svc.CreateOrder(ctx, req)

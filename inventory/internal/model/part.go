@@ -66,4 +66,6 @@ type Manufacturer struct {
 type Value struct {
 	StringValue *string
 	Int64Value  *int64
+	BoolValue   *bool
+	DoubleValue *float64
 }

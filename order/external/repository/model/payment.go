@@ -21,5 +21,5 @@ const (
 	PaymentMethodCARD          PaymentMethod = "CARD"
 	PaymentMethodSBP           PaymentMethod = "SBP"
 	PaymentMethodCREDITCARD    PaymentMethod = "CREDIT_CARD"
-	PaymentMethodINVESTORMONEY PaymentMethod = "INVESTOR_MONEY"
+	PaymentMethodINVESTORMONEY PaymentMethod = "INVEST_MONEY"
 )

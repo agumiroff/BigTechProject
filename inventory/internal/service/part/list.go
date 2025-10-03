@@ -11,7 +11,7 @@ import (
 func (s *service) ListParts(ctx context.Context, f *model.PartsFilter) (res []*model.Part, err error) {
 	part, err := s.Repo.ListParts(ctx, rConverter.FilterToRepo(f))
 	if err != nil {
-		log.Printf("Part not found: %d", err)
+		log.Printf("part not found: %d", err)
 		return []*model.Part{}, err
 	}
 

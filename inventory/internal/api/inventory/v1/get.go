@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"github.com/agumiroff/BigTechProject/inventory/v1/internal/converter"
+	"github.com/agumiroff/BigTechProject/shared/apperrors"
 	inventoryv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
-	"github.com/agumiroff/BigTechProject/shared/v1/apperrors"
 )
 
 func (a *api) GetPart(ctx context.Context, req *inventoryv1.GetPartRequest) (res *inventoryv1.GetPartResponse, err error) {
@@ -16,6 +16,6 @@ func (a *api) GetPart(ctx context.Context, req *inventoryv1.GetPartRequest) (res
 		return &inventoryv1.GetPartResponse{}, apperrors.Map(err)
 	}
 	return &inventoryv1.GetPartResponse{
-		Part: converter.ModelToProto(part),
+		Part: converter.ToProtoPart(part),
 	}, nil
 }

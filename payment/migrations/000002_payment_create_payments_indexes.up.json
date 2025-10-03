@@ -1,0 +1,31 @@
+{
+  "createIndexes": "payments",
+  "indexes": [
+    {
+      "key": {
+        "uuid": 1
+      },
+      "name": "uuid_unique",
+      "unique": true
+    },
+    {
+      "key": {
+        "order_uuid": 1
+      },
+      "name": "order_uuid_unique",
+      "unique": true
+    },
+    {
+      "key": {
+        "status": 1
+      },
+      "name": "status_index"
+    },
+    {
+      "key": {
+        "created_at": -1
+      },
+      "name": "created_at_index"
+    }
+  ]
+}

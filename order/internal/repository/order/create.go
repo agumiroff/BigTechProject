@@ -2,42 +2,72 @@ package order
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
-	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
-	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
+	"github.com/google/uuid"
+	"github.com/lib/pq"
+
+	"github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
-func (r *repository) CreateOrder(ctx context.Context, req *model.Order) (*model.CreateOrderResponse, error) {
-	if req == nil {
-		return nil, apperrors.ErrInvalidRequest
+func (r *repository) CreateOrder(ctx context.Context, order *model.OrderRow, parts []string) (string, error) {
+	const orderQuery = `
+		INSERT INTO orders (
+			order_uuid,
+			user_uuid,
+			total_price,
+			status,
+			created_at
+		) VALUES (
+			$1, $2, $3, $4, NOW()
+		)`
+
+	const orderPartsQuery = `
+		INSERT INTO order_parts (
+			order_uuid,
+			part_uuid
+		) SELECT $1, unnest($2::uuid[])`
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			rbErr := tx.Rollback()
+			if rbErr != nil {
+				err = fmt.Errorf("rollback failed: %w, original error: %w", rbErr, err)
+			}
+		}
+	}()
+
+	order.OrderUUID = uuid.New().String()
+	_, err = tx.ExecContext(ctx, orderQuery,
+		order.OrderUUID,
+		order.UserUUID,
+		order.TotalPrice,
+		order.Status,
+	)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value") {
+			return "", apperrors.ErrAlreadyExists
+		}
+		return "", fmt.Errorf("failed to create order: %w", err)
 	}
 
-	if req.OrderUUID == "" {
-		return nil, apperrors.ErrInvalidRequest
+	_, err = tx.ExecContext(ctx, orderPartsQuery,
+		order.OrderUUID,
+		pq.Array(parts),
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to bulk insert order part: %w", err)
 	}
 
-	if req.UserUUID == "" || len(req.PartUUIDs) == 0 {
-		return nil, apperrors.ErrInvalidRequest
+	if err = tx.Commit(); err != nil {
+		return "", fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if _, exists := r.storage[req.OrderUUID]; exists {
-		return nil, apperrors.ErrAlreadyExists
-	}
-
-	r.storage[req.OrderUUID] = &repomodel.Order{
-		UserUUID:   req.UserUUID,
-		OrderUUID:  req.OrderUUID,
-		PartUUIDs:  req.PartUUIDs,
-		TotalPrice: req.TotalPrice,
-		Status:     repomodel.OrderStatus(req.Status),
-	}
-
-	return &model.CreateOrderResponse{
-		OrderUUID:  req.OrderUUID,
-		TotalPrice: req.TotalPrice,
-	}, nil
+	return order.OrderUUID, nil
 }

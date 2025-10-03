@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 
+	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
+	repoConverter "github.com/agumiroff/BigTechProject/order/v1/internal/repository/converter"
 	"github.com/agumiroff/BigTechProject/shared/v1/apperrors"
 )
 
@@ -12,16 +14,27 @@ func (s *service) CancelOrder(ctx context.Context, uuid string) error {
 		return apperrors.ErrInvalidRequest
 	}
 
-	order, err := s.Repo.Get(ctx, uuid)
+	order, parts, err := s.Repo.GetOrder(ctx, uuid)
 	if err != nil {
 		log.Printf("Order with uuid does not exist %v: %v", uuid, err)
 		return err
 	}
 
-	err = s.Repo.DeleteOrder(ctx, order.OrderUUID)
+	modelOrder := repoConverter.RepoOrderToModel(order, parts)
+
+	if modelOrder.Status == model.OrderStatusCANCELLED {
+		return apperrors.ErrForbidden
+	}
+
+	if modelOrder.Status == model.OrderStatusPAID {
+		return apperrors.ErrForbidden
+	}
+
+	err = s.Repo.CancelOrder(ctx, order.OrderUUID)
 	if err != nil {
 		return err
 	}
+
 	log.Printf("Order cancelled")
 
 	return nil

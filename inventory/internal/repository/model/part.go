@@ -27,10 +27,12 @@ type Manufacturer struct {
 type Value struct {
 	StringValue *string
 	Int64Value  *int64
+	BoolValue   *bool
+	DoubleValue *float64
 }
 
 type Part struct {
-	Uuid          string
+	UUID          string
 	Name          string
 	Description   string
 	Price         float64
@@ -45,7 +47,7 @@ type Part struct {
 }
 
 type PartsFilter struct {
-	Uuids                 []string
+	UUIDs                 []string
 	Names                 []string
 	Categories            []Category
 	ManufacturerCountries []string

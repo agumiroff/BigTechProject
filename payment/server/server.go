@@ -41,7 +41,12 @@ func StartGRPCServer(ctx context.Context, dbURI, dbName string) {
 
 	// Ping the database
 	if err = client.Ping(ctx, nil); err != nil {
-		log.Fatalf("❌ Failed to ping MongoDB: %v", err)
+		// Explicitly disconnect before returning to avoid defer issue
+		if disconnectErr := client.Disconnect(ctx); disconnectErr != nil {
+			log.Printf("❌ Warning: Failed to disconnect from MongoDB: %v", disconnectErr)
+		}
+		log.Printf("❌ Failed to ping MongoDB: %v", err)
+		return
 	}
 	log.Println("✅ Connected to MongoDB")
 
@@ -60,7 +65,8 @@ func StartGRPCServer(ctx context.Context, dbURI, dbName string) {
 	// Set up gRPC server
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
 	if err != nil {
-		log.Fatalf("❌ Failed to listen: %v", err)
+		log.Printf("❌ Failed to listen: %v", err)
+		return
 	}
 
 	s := grpc.NewServer()
@@ -71,14 +77,26 @@ func StartGRPCServer(ctx context.Context, dbURI, dbName string) {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
+	// Channel for server errors
+	errCh := make(chan error, 1)
+
 	go func() {
 		log.Printf("🚀 Starting gRPC server on port %v", grpcPort)
 		if err := s.Serve(lis); err != nil {
-			log.Fatalf("❌ Failed to serve: %v", err)
+			log.Printf("❌ Failed to serve: %v", err)
+			errCh <- err
 		}
 	}()
 
-	<-quit
+	// Handle either quit signal or server error
+	select {
+	case <-quit:
+		// Normal shutdown, continue below
+	case serverErr := <-errCh:
+		log.Printf("❌ Server error: %v", serverErr)
+		s.Stop() // Force stop in case of error
+		return
+	}
 	log.Println("⏹ Shutting down gRPC server")
 	s.GracefulStop()
 	log.Println("✅ Server stopped")

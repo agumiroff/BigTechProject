@@ -88,8 +88,7 @@ func ApplyMigrations(ctx context.Context, db *mongo.Database) error {
 	var kind migKind
 	if len(os.Args) > 1 {
 		command := os.Args[1]
-		switch command {
-		case "migrate":
+		if command == "migrate" {
 			if os.Args[2] == "up" {
 				log.Printf("running up migrations")
 				kind = UP
@@ -114,7 +113,11 @@ func ApplyMigrations(ctx context.Context, db *mongo.Database) error {
 	if err != nil {
 		return fmt.Errorf("failed to query applied migrations: %w", err)
 	}
-	defer cur.Close(ctx)
+	defer func() {
+		if closeErr := cur.Close(ctx); closeErr != nil {
+			err = fmt.Errorf("failed to close cursor: %w, original error: %w", closeErr, err)
+		}
+	}()
 
 	for cur.Next(ctx) {
 		var m Migration
@@ -158,13 +161,15 @@ func ApplyMigrations(ctx context.Context, db *mongo.Database) error {
 		now := time.Now()
 		if runErr != nil {
 			log.Printf("❌ Migration %s failed: %v", mig.Name, runErr)
-			_, _ = errColl.InsertOne(ctx, MigrationError{
+			if _, insertErr := errColl.InsertOne(ctx, MigrationError{
 				MigrationID: mig.ID,
 				Name:        mig.Name,
 				Path:        mig.Path,
 				Error:       runErr.Error(),
 				OccurredAt:  now,
-			})
+			}); insertErr != nil {
+				log.Printf("❌ Failed to log migration error to database: %v", insertErr)
+			}
 			return fmt.Errorf("failed to apply migration %s: %w", mig.Name, runErr)
 		}
 

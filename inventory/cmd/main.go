@@ -5,8 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/agumiroff/BigTechProject/inventory/v1/server"
 	"github.com/joho/godotenv"
+
+	"github.com/agumiroff/BigTechProject/inventory/v1/server"
 )
 
 func main() {

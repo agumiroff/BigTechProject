@@ -6,11 +6,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/brianvoe/gofakeit/v6"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/agumiroff/BigTechProject/payment/v1/internal/model"
 	"github.com/agumiroff/BigTechProject/payment/v1/internal/repository/converter"
-	"github.com/brianvoe/gofakeit/v6"
 )
 
 func (r *repository) PayOrder(ctx context.Context, p *model.Payment) (string, error) {

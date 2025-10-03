@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
@@ -38,7 +39,7 @@ func (r *repository) UpdateOrder(ctx context.Context, m *repomodel.OrderRow) err
 	var currentStatus string
 	err := r.db.QueryRowContext(ctx, getOrderStatusForUpdateQuery, m.OrderUUID).Scan(&currentStatus)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return apperrors.ErrNotFound
 		}
 		return fmt.Errorf("failed to get order status: %w", err)

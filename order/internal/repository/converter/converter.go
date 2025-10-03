@@ -47,7 +47,6 @@ func ModelOrderToRepo(m *model.Order) (*repomodel.OrderRow, []*repomodel.OrderPa
 }
 
 func RepoOrderToModel(r *repomodel.OrderRow, partUUIDs []string) *model.Order {
-
 	return &model.Order{
 		OrderUUID:       r.OrderUUID,
 		UserUUID:        r.UserUUID,

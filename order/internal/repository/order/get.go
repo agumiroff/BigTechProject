@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
@@ -41,7 +42,7 @@ func (r *repository) GetOrder(ctx context.Context, uuid string) (order *repomode
 		&order.TransactionUUID,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil, apperrors.ErrNotFound
 		}
 		return nil, nil, fmt.Errorf("failed to get order: %w", err)
@@ -52,7 +53,12 @@ func (r *repository) GetOrder(ctx context.Context, uuid string) (order *repomode
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get order parts: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		closeErr := rows.Close()
+		if closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close rows: %w", closeErr)
+		}
+	}()
 
 	for rows.Next() {
 		var partUUID string

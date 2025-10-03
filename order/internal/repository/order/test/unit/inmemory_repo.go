@@ -2,7 +2,6 @@ package unit
 
 import (
 	"context"
-	"database/sql"
 	"sync"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
@@ -153,12 +152,4 @@ func (r *inMemoryRepo) CancelOrder(ctx context.Context, uuid string) error {
 	r.storage[uuid] = orderData
 
 	return nil
-}
-
-// Helper function to create a SQL null string
-func nullString(s string) sql.NullString {
-	return sql.NullString{
-		String: s,
-		Valid:  s != "",
-	}
 }

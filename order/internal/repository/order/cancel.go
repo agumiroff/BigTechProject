@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
@@ -29,7 +30,7 @@ func (r *repository) CancelOrder(ctx context.Context, uuid string) error {
 	var currentStatus model.OrderStatus
 	err := r.db.QueryRowContext(ctx, getOrderStatusQuery, uuid).Scan(&currentStatus)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return apperrors.ErrNotFound
 		}
 		return fmt.Errorf("failed to get order status: %w", err)

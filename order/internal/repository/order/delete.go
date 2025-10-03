@@ -3,10 +3,10 @@ package order
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
-
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
@@ -24,7 +24,7 @@ func (r *repository) DeleteOrder(ctx context.Context, uuid string) error {
 	var status model.OrderStatus
 	err := r.db.QueryRowContext(ctx, getStatusQuery, uuid).Scan(&status)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return apperrors.ErrNotFound
 		}
 		return fmt.Errorf("failed to check order status: %w", err)
@@ -50,5 +50,4 @@ func (r *repository) DeleteOrder(ctx context.Context, uuid string) error {
 	}
 
 	return nil
-
 }

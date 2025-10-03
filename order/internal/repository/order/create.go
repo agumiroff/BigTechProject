@@ -36,7 +36,10 @@ func (r *repository) CreateOrder(ctx context.Context, order *model.OrderRow, par
 	}
 	defer func() {
 		if err != nil {
-			_ = tx.Rollback()
+			rbErr := tx.Rollback()
+			if rbErr != nil {
+				err = fmt.Errorf("rollback failed: %w, original error: %w", rbErr, err)
+			}
 		}
 	}()
 

@@ -25,7 +25,7 @@ const (
 	grpcPort = 50051
 )
 
-func StartGRPCServer(ctx context.Context, dbURI string, dbName string) {
+func StartGRPCServer(ctx context.Context, dbURI, dbName string) {
 	// Connect to MongoDB
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dbURI))
 	if err != nil {

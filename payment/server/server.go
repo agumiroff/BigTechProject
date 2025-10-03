@@ -25,7 +25,7 @@ const (
 	grpcPort = 50052
 )
 
-func StartGRPCServer(ctx context.Context, dbURI string, dbName string) {
+func StartGRPCServer(ctx context.Context, dbURI, dbName string) {
 	// Get database name from environment
 
 	// Connect to MongoDB

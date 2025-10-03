@@ -11,11 +11,11 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/handler/order"
-	OrderV1 "github.com/agumiroff/BigTechProject/shared/pkg/openapi/v1"
+	orderV1 "github.com/agumiroff/BigTechProject/shared/pkg/openapi/v1"
 )
 
 func StartHTTPServer(h *order.OrderHandler, t time.Duration, port int) (*http.Server, error) {
-	orderServer, err := OrderV1.NewServer(h)
+	orderServer, err := orderV1.NewServer(h)
 	if err != nil {
 		log.Fatalf("ошибка создания сервера OpenAPI: %v", err)
 		return nil, err

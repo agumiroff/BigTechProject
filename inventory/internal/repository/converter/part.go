@@ -14,7 +14,7 @@ func ModelToRepo(m *model.Part) *repomodel.Part {
 	}
 
 	return &repomodel.Part{
-		Uuid:          m.Uuid,
+		UUID:          m.Uuid,
 		Name:          m.Name,
 		Description:   m.Description,
 		Price:         m.Price,
@@ -45,7 +45,7 @@ func RepoToModel(m *repomodel.Part) *model.Part {
 	}
 
 	return &model.Part{
-		Uuid:          m.Uuid,
+		Uuid:          m.UUID,
 		Name:          m.Name,
 		Description:   m.Description,
 		Price:         m.Price,
@@ -72,10 +72,11 @@ func RepoToModel(m *repomodel.Part) *model.Part {
 // FilterToRepo Filter convert
 func FilterToRepo(f *model.PartsFilter) *repomodel.PartsFilter {
 	return &repomodel.PartsFilter{
-		Uuids:                 f.Uuids,
+		UUIDs:                 f.Uuids,
 		Names:                 f.Names,
 		Categories:            CategoryToRepo(f.Categories),
 		ManufacturerCountries: f.ManufacturerCountries,
+		Tags:                  f.Tags,
 	}
 }
 
@@ -119,7 +120,14 @@ func cloneMetadataToRepo(in map[string]*model.Value) map[string]*repomodel.Value
 			i := *v.Int64Value
 			val.Int64Value = &i
 		}
-
+		if v.BoolValue != nil {
+			b := *v.BoolValue
+			val.BoolValue = &b
+		}
+		if v.DoubleValue != nil {
+			d := *v.DoubleValue
+			val.DoubleValue = &d
+		}
 		out[k] = val
 	}
 	return out
@@ -139,6 +147,14 @@ func cloneMetadata(in map[string]*repomodel.Value) map[string]*model.Value {
 		if v.Int64Value != nil {
 			i := *v.Int64Value
 			val.Int64Value = &i
+		}
+		if v.BoolValue != nil {
+			b := *v.BoolValue
+			val.BoolValue = &b
+		}
+		if v.DoubleValue != nil {
+			d := *v.DoubleValue
+			val.DoubleValue = &d
 		}
 		out[k] = val
 	}

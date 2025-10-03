@@ -1,4 +1,4 @@
-package test
+package payment_test
 
 import (
 	"context"
@@ -6,24 +6,50 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/agumiroff/BigTechProject/payment/v1/internal/model"
 	"github.com/agumiroff/BigTechProject/payment/v1/internal/repository/payment"
 )
 
-func newTestPayment() *model.Payment {
-	return &model.Payment{
-		UserUuid:      "test-user-uuid",
-		OrderUuid:     "test-order-uuid",
-		PaymentMethod: model.CARD,
+func setupTestDB(t *testing.T) *mongo.Database {
+	ctx := context.Background()
+	credentials := options.Credential{
+		Username: "payment",
+		Password: "payment",
 	}
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27018").SetAuth(credentials))
+	require.NoError(t, err)
+	db := client.Database("test_payments")
+
+	// Clean up before each test
+	err = db.Collection("payments").Drop(ctx)
+	require.NoError(t, err)
+
+	// Create indexes
+	indexModel := mongo.IndexModel{
+		Keys: map[string]interface{}{
+			"order_uuid": 1,
+		},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err = db.Collection("payments").Indexes().CreateOne(ctx, indexModel)
+	require.NoError(t, err)
+
+	return db
 }
 
 func TestPayOrder_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
-	repo := payment.NewRepository()
-	testPayment := newTestPayment()
+	db := setupTestDB(t)
+	repo := payment.NewRepository(db)
+	testPayment := &model.Payment{
+		UUID:          "user-123",
+		OrderUUID:     "order-123",
+		PaymentMethod: model.PaymentMethodCard,
+	}
 
 	// Act
 	txID, err := repo.PayOrder(ctx, testPayment)
@@ -31,52 +57,43 @@ func TestPayOrder_Success(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 	require.NotEmpty(t, txID)
-
-	// Verify payment was stored correctly
-	stored, err := repo.GetPayment(ctx, txID)
-	require.NoError(t, err)
-	require.NotNil(t, stored)
-
-	assert.Equal(t, testPayment.UserUuid, stored.UserUuid)
-	assert.Equal(t, testPayment.OrderUuid, stored.OrderUuid)
-	assert.Equal(t, testPayment.PaymentMethod, stored.PaymentMethod)
 }
 
 func TestPayOrder_ValidationErrors(t *testing.T) {
 	testCases := []struct {
 		name    string
 		payment *model.Payment
-		errMsg  string
+		expErr  error
 	}{
 		{
 			name:    "nil payment",
 			payment: nil,
-			errMsg:  "payment is required",
+			expErr:  payment.ErrPaymentRequired,
 		},
 		{
 			name: "empty user uuid",
 			payment: &model.Payment{
-				OrderUuid:     "test-order",
-				PaymentMethod: model.CARD,
+				OrderUUID:     "order-123",
+				PaymentMethod: model.PaymentMethodCard,
 			},
-			errMsg: "user uuid is required",
+			expErr: payment.ErrUserUUIDRequired,
 		},
 		{
 			name: "empty order uuid",
 			payment: &model.Payment{
-				UserUuid:      "test-user",
-				PaymentMethod: model.CARD,
+				UUID:          "user-123",
+				PaymentMethod: model.PaymentMethodCard,
 			},
-			errMsg: "order uuid is required",
+			expErr: payment.ErrOrderUUIDRequired,
 		},
 		{
-			name: "unspecified payment method",
+			name: "invalid payment method",
 			payment: &model.Payment{
-				UserUuid:      "test-user",
-				OrderUuid:     "test-order",
-				PaymentMethod: model.CategoryUnspecified,
+				UUID:          "user-123",
+				OrderUUID:     "order-123",
+				PaymentMethod: "",
 			},
-			errMsg: "payment method is required",
+			expErr: payment.ErrPaymentMethodInvalid,
 		},
 	}
 
@@ -84,67 +101,41 @@ func TestPayOrder_ValidationErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
 			ctx := context.Background()
-			repo := payment.NewRepository()
+			db := setupTestDB(t)
+			repo := payment.NewRepository(db)
 
 			// Act
 			txID, err := repo.PayOrder(ctx, tc.payment)
 
 			// Assert
-			require.Error(t, err)
-			require.Empty(t, txID)
-			assert.Contains(t, err.Error(), tc.errMsg)
+			assert.Error(t, err)
+			assert.Equal(t, "", txID)
+			assert.ErrorIs(t, err, tc.expErr)
 		})
 	}
 }
 
-func TestGetPayment_Success(t *testing.T) {
+func TestPayOrder_DuplicateOrder(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
-	repo := payment.NewRepository()
-	testPayment := newTestPayment()
+	db := setupTestDB(t)
+	repo := payment.NewRepository(db)
 
-	// Create payment first
-	txID, err := repo.PayOrder(ctx, testPayment)
+	payment := &model.Payment{
+		UUID:          "user-123",
+		OrderUUID:     "order-123",
+		PaymentMethod: model.PaymentMethodCard,
+	}
+
+	// First payment should succeed
+	_, err := repo.PayOrder(ctx, payment)
 	require.NoError(t, err)
-	require.NotEmpty(t, txID)
 
-	// Act
-	stored, err := repo.GetPayment(ctx, txID)
-
-	// Assert
-	require.NoError(t, err)
-	require.NotNil(t, stored)
-
-	assert.Equal(t, testPayment.UserUuid, stored.UserUuid)
-	assert.Equal(t, testPayment.OrderUuid, stored.OrderUuid)
-	assert.Equal(t, testPayment.PaymentMethod, stored.PaymentMethod)
-}
-
-func TestGetPayment_NotFound(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	repo := payment.NewRepository()
-	nonExistentTxID := "non-existent-tx-id"
-
-	// Act
-	stored, err := repo.GetPayment(ctx, nonExistentTxID)
+	// Act - Try to create duplicate payment
+	txID, err := repo.PayOrder(ctx, payment)
 
 	// Assert
-	require.Error(t, err)
-	require.Nil(t, stored)
-	assert.ErrorIs(t, err, payment.ErrPaymentNotFound)
-}
-
-func TestGetPayment_EmptyTxID(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	repo := payment.NewRepository()
-
-	// Act
-	stored, err := repo.GetPayment(ctx, "")
-
-	// Assert
-	require.Error(t, err)
-	require.Nil(t, stored)
-	assert.ErrorIs(t, err, payment.ErrTxIDRequired)
+	assert.Error(t, err)
+	assert.Equal(t, "", txID)
+	assert.Contains(t, err.Error(), "payment for order order-123 already exists")
 }

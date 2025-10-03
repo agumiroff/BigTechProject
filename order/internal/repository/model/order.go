@@ -1,14 +1,9 @@
 package model
 
-type Order struct {
-	OrderUUID       string
-	UserUUID        string
-	PartUUIDs       []string
-	TotalPrice      float64
-	TransactionUUID string
-	PaymentMethod   PaymentMethod
-	Status          OrderStatus
-}
+import (
+	"database/sql"
+	"time"
+)
 
 type OrderStatus string
 
@@ -27,3 +22,14 @@ const (
 	PaymentMethodCREDITCARD    PaymentMethod = "CREDIT_CARD"
 	PaymentMethodINVESTORMONEY PaymentMethod = "INVESTOR_MONEY"
 )
+
+type OrderRow struct {
+	OrderUUID       string         `db:"order_uuid"`
+	UserUUID        string         `db:"user_uuid"`
+	TotalPrice      float64        `db:"total_price"`
+	TransactionUUID sql.NullString `db:"transaction_uuid"`
+	PaymentMethod   sql.NullString `db:"payment_method"`
+	Status          string         `db:"status"`
+	CreatedAt       time.Time      `db:"created_at"`
+	UpdatedAt       sql.NullTime   `db:"updated_at"`
+}

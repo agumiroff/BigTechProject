@@ -2,22 +2,75 @@ package order
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"fmt"
 
-	"github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
+	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
-func (r *repository) Get(ctx context.Context, uuid string) (*model.Order, error) {
+func (r *repository) GetOrder(ctx context.Context, uuid string) (order *repomodel.OrderRow, parts []string, err error) {
 	if uuid == "" {
-		return nil, apperrors.ErrInvalidRequest
-	}
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	order, exists := r.storage[uuid]
-	if !exists {
-		return nil, apperrors.ErrNotFound
+		return nil, nil, apperrors.ErrInvalidRequest
 	}
 
-	return order, nil
+	const orderQuery = `
+		SELECT 
+			order_uuid,
+			user_uuid,
+			total_price,
+			status,
+			payment_method,
+			transaction_uuid
+		FROM orders 
+		WHERE order_uuid = $1`
+
+	const partsQuery = `
+		SELECT 
+			part_uuid
+		FROM order_parts 
+		WHERE order_uuid = $1`
+
+	order = &repomodel.OrderRow{}
+	err = r.db.QueryRowContext(ctx, orderQuery, uuid).Scan(
+		&order.OrderUUID,
+		&order.UserUUID,
+		&order.TotalPrice,
+		&order.Status,
+		&order.PaymentMethod,
+		&order.TransactionUUID,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil, apperrors.ErrNotFound
+		}
+		return nil, nil, fmt.Errorf("failed to get order: %w", err)
+	}
+
+	// Get order parts
+	rows, err := r.db.QueryContext(ctx, partsQuery, uuid)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get order parts: %w", err)
+	}
+	defer func() {
+		closeErr := rows.Close()
+		if closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close rows: %w", closeErr)
+		}
+	}()
+
+	for rows.Next() {
+		var partUUID string
+		if err = rows.Scan(&partUUID); err != nil {
+			return nil, nil, fmt.Errorf("failed to scan part UUID: %w", err)
+		}
+		parts = append(parts, partUUID)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("error iterating order parts: %w", err)
+	}
+
+	return order, parts, nil
 }

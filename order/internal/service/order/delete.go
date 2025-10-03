@@ -12,7 +12,7 @@ func (s *service) DeleteOrder(ctx context.Context, uuid string) error {
 		return apperrors.ErrInvalidRequest
 	}
 
-	order, err := s.Repo.Get(ctx, uuid)
+	order, _, err := s.Repo.GetOrder(ctx, uuid)
 	if err != nil {
 		log.Printf("Order with uuid does not exist %v: %v", uuid, err)
 		return err

@@ -1,0 +1,36 @@
+{
+  "create": "payments",
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["uuid", "order_uuid", "status", "amount", "created_at", "updated_at"],
+      "properties": {
+        "uuid": {
+          "bsonType": "string",
+          "description": "Unique identifier for the payment"
+        },
+        "order_uuid": {
+          "bsonType": "string",
+          "description": "Order UUID this payment belongs to"
+        },
+        "status": {
+          "bsonType": "string",
+          "enum": ["pending", "processing", "completed", "failed", "refunded"],
+          "description": "Payment status"
+        },
+        "amount": {
+          "bsonType": "double",
+          "description": "Payment amount"
+        },
+        "created_at": {
+          "bsonType": "date",
+          "description": "Creation timestamp"
+        },
+        "updated_at": {
+          "bsonType": "date",
+          "description": "Last update timestamp"
+        }
+      }
+    }
+  }
+}

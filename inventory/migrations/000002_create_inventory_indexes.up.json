@@ -1,0 +1,36 @@
+{
+  "createIndexes": "parts",
+  "indexes": [
+    {
+      "key": {
+        "uuid": 1
+      },
+      "name": "uuid_unique",
+      "unique": true
+    },
+    {
+      "key": {
+        "name": 1
+      },
+      "name": "name_index"
+    },
+    {
+      "key": {
+        "category": 1
+      },
+      "name": "category_index"
+    },
+    {
+      "key": {
+        "manufacturer.country": 1
+      },
+      "name": "manufacturer_country_index"
+    },
+    {
+      "key": {
+        "tags": 1
+      },
+      "name": "tags_index"
+    }
+  ]
+}

@@ -2,9 +2,15 @@ package payment
 
 import (
 	"context"
+	"errors"
+	"fmt"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/agumiroff/BigTechProject/payment/v1/internal/model"
 	"github.com/agumiroff/BigTechProject/payment/v1/internal/repository/converter"
+	repomodel "github.com/agumiroff/BigTechProject/payment/v1/internal/repository/model"
 )
 
 func (r *repository) GetPayment(ctx context.Context, uuid string) (*model.Payment, error) {
@@ -12,13 +18,14 @@ func (r *repository) GetPayment(ctx context.Context, uuid string) (*model.Paymen
 		return nil, ErrTxIDRequired
 	}
 
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	payment, exists := r.storage[uuid]
-	if !exists {
-		return nil, ErrPaymentNotFound
+	var payment repomodel.Payment
+	err := r.collection.FindOne(ctx, bson.M{"uuid": uuid}).Decode(&payment)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, ErrPaymentNotFound
+		}
+		return nil, fmt.Errorf("failed to get payment: %w", err)
 	}
 
-	return converter.RepoToModel(*payment), nil
+	return converter.RepoToModel(&payment), nil
 }

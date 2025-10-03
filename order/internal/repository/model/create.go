@@ -1,12 +1,12 @@
 package model
 
 type CreateOrderRequest struct {
-	UserUuid   string
+	UserUUID   string
 	PartUuids  []string
 	TotalPrice float64
 }
 
 type CreateOrderResponse struct {
-	OrderUuid  string
+	OrderUUID  string
 	TotalPrice float64
 }

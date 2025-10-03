@@ -7,12 +7,11 @@
 package paymentv1
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -265,17 +264,14 @@ func file_payment_v1_payment_proto_rawDescGZIP() []byte {
 	return file_payment_v1_payment_proto_rawDescData
 }
 
-var (
-	file_payment_v1_payment_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-	file_payment_v1_payment_proto_msgTypes  = make([]protoimpl.MessageInfo, 3)
-	file_payment_v1_payment_proto_goTypes   = []any{
-		(PaymentMethod)(0),       // 0: payment.v1.PaymentMethod
-		(*PayOrderRequest)(nil),  // 1: payment.v1.PayOrderRequest
-		(*Payment)(nil),          // 2: payment.v1.Payment
-		(*PayOrderResponse)(nil), // 3: payment.v1.PayOrderResponse
-	}
-)
-
+var file_payment_v1_payment_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_payment_v1_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_payment_v1_payment_proto_goTypes = []any{
+	(PaymentMethod)(0),       // 0: payment.v1.PaymentMethod
+	(*PayOrderRequest)(nil),  // 1: payment.v1.PayOrderRequest
+	(*Payment)(nil),          // 2: payment.v1.Payment
+	(*PayOrderResponse)(nil), // 3: payment.v1.PayOrderResponse
+}
 var file_payment_v1_payment_proto_depIdxs = []int32{
 	2, // 0: payment.v1.PayOrderRequest.payment:type_name -> payment.v1.Payment
 	0, // 1: payment.v1.Payment.payment_method:type_name -> payment.v1.PaymentMethod

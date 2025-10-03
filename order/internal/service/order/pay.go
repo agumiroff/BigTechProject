@@ -2,6 +2,7 @@ package order
 
 import (
 	"context"
+	"database/sql"
 	"log"
 
 	"github.com/google/uuid"
@@ -15,13 +16,32 @@ import (
 )
 
 func (s *service) PayOrder(ctx context.Context, req *model.PayOrderRequest) (*model.PayOrderResponse, error) {
+	var err error
+
 	if req.OrderUUID == "" {
 		return nil, apperrors.ErrInvalidRequest
 	}
 
-	txid, err := s.ExRepo.PayOrder(ctx, &paymentv1.PayOrderRequest{
+	// Get the order to verify status and get UserUUID
+	order, _, err := s.Repo.GetOrder(ctx, req.OrderUUID)
+	if err != nil {
+		log.Printf("failed to get order #%v\n %v", req.OrderUUID, err)
+		return nil, err
+	}
+
+	if order.Status == string(repomodel.OrderStatusPAID) {
+		return nil, ordererrors.ErrOrderPaid
+	}
+
+	if order.Status == string(repomodel.OrderStatusCANCELLED) {
+		return nil, ordererrors.ErrOrderCancelled
+	}
+
+	// Process payment
+	res, err := s.ExRepo.PayOrder(ctx, &paymentv1.PayOrderRequest{
 		Payment: &paymentv1.Payment{
 			OrderUuid:     req.OrderUUID,
+			UserUuid:      order.UserUUID,
 			PaymentMethod: converter.ToProtoPaymentMethod(&req.PaymentMethod),
 		},
 	})
@@ -30,36 +50,30 @@ func (s *service) PayOrder(ctx context.Context, req *model.PayOrderRequest) (*mo
 		return nil, err
 	}
 
-	order, err := s.Repo.Get(ctx, req.OrderUUID)
-	if err != nil {
-		log.Printf("failed to get order #%v\n %v", req.OrderUUID, err)
-		return nil, err
+	// Update order status
+	order.PaymentMethod = sql.NullString{
+		String: string(req.PaymentMethod),
+		Valid:  req.PaymentMethod != "",
 	}
-
-	if order.Status == repomodel.OrderStatusPAID {
-		return nil, ordererrors.ErrOrderPaid
+	order.TransactionUUID = sql.NullString{
+		String: res.TransactionUuid,
+		Valid:  res.TransactionUuid != "",
 	}
+	order.Status = string(repomodel.OrderStatusPAID)
 
-	if order.Status == repomodel.OrderStatusCANCELLED {
-		return nil, ordererrors.ErrOrderCancelled
-	}
-
-	order.PaymentMethod = repomodel.PaymentMethod(req.PaymentMethod)
-	order.TransactionUUID = txid.TransactionUuid
-	order.Status = repomodel.OrderStatusPAID
-
-	err = s.Repo.UpdateOrder(ctx, converter.ToModelOrder(order))
-	if err != nil {
+	if err = s.Repo.UpdateOrder(ctx, order); err != nil {
 		log.Printf("failed to update order #%v\n %v", req.OrderUUID, err)
 		return nil, err
 	}
 
-	uuid, err := uuid.Parse(txid.TransactionUuid)
+	uuid, err := uuid.Parse(res.TransactionUuid)
 	if err != nil {
 		return nil, err
 	}
 
-	return &model.PayOrderResponse{
+	resp := &model.PayOrderResponse{
 		TransactionUUID: uuid,
-	}, nil
+	}
+
+	return resp, nil
 }

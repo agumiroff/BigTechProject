@@ -7,31 +7,20 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/go-faster/errors"
-	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	invServer "github.com/agumiroff/BigTechProject/inventory/v1/server"
-	ExRepo "github.com/agumiroff/BigTechProject/order/v1/external/repository/order"
+	exRepo "github.com/agumiroff/BigTechProject/order/v1/external/repository/order"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/api/v1"
+	"github.com/agumiroff/BigTechProject/order/v1/internal/config"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/db"
 	handler "github.com/agumiroff/BigTechProject/order/v1/internal/handler/order"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/migrator"
-	InRepo "github.com/agumiroff/BigTechProject/order/v1/internal/repository/order"
+	inRepo "github.com/agumiroff/BigTechProject/order/v1/internal/repository/order"
 	serv "github.com/agumiroff/BigTechProject/order/v1/internal/service/order"
 	orderServer "github.com/agumiroff/BigTechProject/order/v1/server"
-	payServer "github.com/agumiroff/BigTechProject/payment/v1/server"
-)
-
-const (
-	invServiceAddress = "localhost:50051"
-	payServiceAddress = "localhost:50052"
-	port              = 8080
-	readHeaderTimeout = 5 * time.Second
-	shutdownTimeout   = 109 * time.Second
 )
 
 func dialGRPC(address string) (conn *grpc.ClientConn) {
@@ -54,49 +43,38 @@ func closeConn(name string, conn *grpc.ClientConn) {
 }
 
 func main() {
-	if err := godotenv.Load("../.env"); err != nil {
-		log.Printf("Warning: Error loading .env file: %v", err)
+	err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// --- payment env ---
-	paymentURI := os.Getenv("PAYMENT_MONGO_URI")
-	paymentDB := os.Getenv("PAYMENT_MONGO_INITDB_DATABASE")
-
-	// --- inventory env ---
-	inventoryURI := os.Getenv("INVENTORY_MONGO_URI")
-	inventoryDB := os.Getenv("INVENTORY_MONGO_INITDB_DATABASE")
-
-	// --- order env ---
-	migrationsDir := os.Getenv("MIGRATIONS_DIR")
-
-	if paymentURI == "" {
-		log.Fatal("❌ failed to get payment MONGO_URI from environment")
+	httpConfig := config.AppConfig().HTTPConfig
+	if httpConfig == nil {
+		log.Fatalf("HTTP configuration is nil after loading")
 	}
 
-	if inventoryURI == "" {
-		log.Fatal("❌ failed to get inventory payment MONGO_URI from environment")
-	}
+	// envs loading
+	invServiceAddress := httpConfig.InventoryAddr()
+	payServiceAddress := httpConfig.PaymentAddr()
+	readHeaderTimeout := httpConfig.Timeout()
+	address := httpConfig.Address()
+	shutdownTimeout := httpConfig.Timeout()
+	migrationsDir := config.AppConfig().PostgressConfig.MigPath()
+	dbURI := config.AppConfig().PostgressConfig.DSN()
 
-	// --- gRPC servers: INVENTORY и PAYMENT ---
-	ctx := context.Background()
-
-	go func() {
-		invServer.StartGRPCServer(ctx, inventoryURI, inventoryDB)
-	}()
-
-	go func() {
-		payServer.StartGRPCServer(ctx, paymentURI, paymentDB)
-	}()
-
-	// --- gRPC клиенты ---
+	// --- gRPC clients ---
 	invConn := dialGRPC(invServiceAddress)
-	defer closeConn("Inventory Service", invConn)
+	if invConn != nil {
+		defer closeConn("Inventory Service", invConn)
+	}
 
 	payConn := dialGRPC(payServiceAddress)
-	defer closeConn("Payment Service", payConn)
+	if payConn != nil {
+		defer closeConn("Payment Service", payConn)
+	}
 
 	// Create repositories
-	db, err := db.ConnectDB()
+	db, err := db.ConnectDB(dbURI)
 	if err != nil {
 		log.Printf("failed to create database connection %v", err)
 		return
@@ -106,20 +84,20 @@ func main() {
 		log.Printf("Failed to run migrations: %v", err)
 	}
 
-	inRepo := InRepo.NewRepository(db) // Use in-memory storage for now
-	exRepo := ExRepo.NewRepository(invConn, payConn)
+	inRepo := inRepo.NewRepository(db)
+	exRepo := exRepo.NewRepository(invConn, payConn)
 	service := serv.NewService(inRepo, exRepo)
 	api := api.NewAPI(service)
 	h := handler.NewHandler(api)
 
 	// --- HTTP сервер ---
-	server, err := orderServer.StartHTTPServer(h, readHeaderTimeout, port)
+	server, err := orderServer.StartHTTPServer(h, readHeaderTimeout, address)
 	if err != nil {
 		log.Printf("❌ Ошибка запуска HTTP-сервера: %v", err)
 	}
 
 	go func() {
-		log.Printf("🚀 HTTP-сервер запущен на порту %d\n", port)
+		log.Printf("🚀 HTTP-сервер запущен на порту %s\n", address)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("❌ Ошибка работы HTTP-сервера: %v", err)
 		}

@@ -6,7 +6,7 @@ import (
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
 	repoConverter "github.com/agumiroff/BigTechProject/order/v1/internal/repository/converter"
-	"github.com/agumiroff/BigTechProject/shared/v1/apperrors"
+	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
 func (s *service) CancelOrder(ctx context.Context, uuid string) error {

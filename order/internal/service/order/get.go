@@ -6,7 +6,7 @@ import (
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/converter"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
-	"github.com/agumiroff/BigTechProject/shared/v1/apperrors"
+	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
 func (s *service) GetOrder(ctx context.Context, uuid string) (*model.Order, error) {

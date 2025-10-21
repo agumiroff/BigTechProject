@@ -11,8 +11,8 @@ import (
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
 	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	ordererrors "github.com/agumiroff/BigTechProject/order/v1/internal/service/errors"
+	"github.com/agumiroff/BigTechProject/shared/apperrors"
 	paymentv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/payment/v1"
-	"github.com/agumiroff/BigTechProject/shared/v1/apperrors"
 )
 
 func (s *service) PayOrder(ctx context.Context, req *model.PayOrderRequest) (*model.PayOrderResponse, error) {

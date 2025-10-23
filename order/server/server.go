@@ -2,9 +2,7 @@ package server
 
 import (
 	"log"
-	"net"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -14,7 +12,7 @@ import (
 	orderV1 "github.com/agumiroff/BigTechProject/shared/pkg/openapi/v1"
 )
 
-func StartHTTPServer(h *order.OrderHandler, t time.Duration, port int) (*http.Server, error) {
+func StartHTTPServer(h *order.OrderHandler, t time.Duration, address string) (*http.Server, error) {
 	orderServer, err := orderV1.NewServer(h)
 	if err != nil {
 		log.Fatalf("ошибка создания сервера OpenAPI: %v", err)
@@ -34,7 +32,7 @@ func StartHTTPServer(h *order.OrderHandler, t time.Duration, port int) (*http.Se
 
 	// Запускаем HTTP-сервер
 	server := &http.Server{
-		Addr:              net.JoinHostPort("localhost", strconv.Itoa(port)),
+		Addr:              address,
 		Handler:           r,
 		ReadHeaderTimeout: t,
 	}

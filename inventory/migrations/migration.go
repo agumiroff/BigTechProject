@@ -37,16 +37,15 @@ type MigrationError struct {
 	OccurredAt  time.Time `bson:"occurredAt"`
 }
 
-func getMigrationsList(kind migKind) ([]Migration, error) {
-	dir := os.Getenv("INVENTORY_MIGRATIONS_DIR")
-	if dir == "" {
-		return nil, fmt.Errorf("MIGRATIONS_DIR environment variable not set")
+func getMigrationsList(kind migKind, path string) ([]Migration, error) {
+	if path == "" {
+		return nil, fmt.Errorf("MIGRATIONS_PATH environment variable not set")
 	}
 
-	entries, err := os.ReadDir(dir)
+	entries, err := os.ReadDir(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("migrations directory does not exist: %s", dir)
+			return nil, fmt.Errorf("migrations directory does not exist: %s", path)
 		}
 		return nil, fmt.Errorf("failed to read migrations directory: %w", err)
 	}
@@ -78,13 +77,13 @@ func getMigrationsList(kind migKind) ([]Migration, error) {
 		migs = append(migs, Migration{
 			ID:   id,
 			Name: filename,
-			Path: filepath.Join(dir, filename),
+			Path: filepath.Join(path, filename),
 		})
 	}
 	return migs, nil
 }
 
-func ApplyMigrations(ctx context.Context, db *mongo.Database) error {
+func ApplyMigrations(ctx context.Context, db *mongo.Database, migPath string) error {
 	var kind migKind
 	if len(os.Args) > 1 {
 		command := os.Args[1]
@@ -99,7 +98,7 @@ func ApplyMigrations(ctx context.Context, db *mongo.Database) error {
 			}
 		}
 	}
-	migrations, err := getMigrationsList(kind)
+	migrations, err := getMigrationsList(kind, migPath)
 	if err != nil {
 		return fmt.Errorf("failed to get migrations list: %w", err)
 	}

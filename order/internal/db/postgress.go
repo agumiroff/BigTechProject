@@ -4,14 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // Register pgx driver
 )
 
-func ConnectDB() (*sql.DB, error) {
+func ConnectDB(uri string) (*sql.DB, error) {
 	ctx := context.Background()
-	uri := os.Getenv("POSTGRES_URI")
 	if uri == "" {
 		return nil, fmt.Errorf("env variable POSTGRESS_URI is empty")
 	}

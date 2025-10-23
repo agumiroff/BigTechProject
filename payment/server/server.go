@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -15,20 +14,15 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	api "github.com/agumiroff/BigTechProject/payment/v1/internal/api/v1"
+	"github.com/agumiroff/BigTechProject/payment/v1/internal/config"
 	repository "github.com/agumiroff/BigTechProject/payment/v1/internal/repository/payment"
 	service "github.com/agumiroff/BigTechProject/payment/v1/internal/service/payment"
 	"github.com/agumiroff/BigTechProject/payment/v1/migrations"
 	paymentv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/payment/v1"
 )
 
-const (
-	grpcPort = 50052
-)
-
-func StartGRPCServer(ctx context.Context, dbURI, dbName string) {
-	// Get database name from environment
-
-	// Connect to MongoDB
+func StartGRPCServer(ctx context.Context) {
+	dbURI, dbName, grpcAdress, migPath := loadEnv()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dbURI))
 	if err != nil {
 		log.Fatalf("❌ Failed to connect to MongoDB: %v", err)
@@ -53,7 +47,7 @@ func StartGRPCServer(ctx context.Context, dbURI, dbName string) {
 	db := client.Database(dbName)
 
 	// Run migrations
-	if err = migrations.ApplyMigrations(ctx, db); err != nil {
+	if err = migrations.ApplyMigrations(ctx, db, migPath); err != nil {
 		log.Printf("Warning: Setup error: %v", err)
 	}
 
@@ -63,7 +57,7 @@ func StartGRPCServer(ctx context.Context, dbURI, dbName string) {
 	api := api.NewAPI(svc)
 
 	// Set up gRPC server
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
+	lis, err := net.Listen("tcp", grpcAdress)
 	if err != nil {
 		log.Printf("❌ Failed to listen: %v", err)
 		return
@@ -81,7 +75,7 @@ func StartGRPCServer(ctx context.Context, dbURI, dbName string) {
 	errCh := make(chan error, 1)
 
 	go func() {
-		log.Printf("🚀 Starting gRPC server on port %v", grpcPort)
+		log.Printf("🚀 Starting gRPC server on port %v", grpcAdress)
 		if err := s.Serve(lis); err != nil {
 			log.Printf("❌ Failed to serve: %v", err)
 			errCh <- err
@@ -100,4 +94,26 @@ func StartGRPCServer(ctx context.Context, dbURI, dbName string) {
 	log.Println("⏹ Shutting down gRPC server")
 	s.GracefulStop()
 	log.Println("✅ Server stopped")
+}
+
+func loadEnv() (string, string, string, string) {
+	config.Load()
+	dbURI := config.AppConfig().MongoConfig.URI()
+	if dbURI == "" {
+		log.Fatal("❌ failed to get MONGO_URI from environment")
+	}
+
+	dbName := config.AppConfig().MongoConfig.DBName()
+	if dbName == "" {
+		log.Fatal("❌ failed to get MONGO_INITDB_DATABASE from environment")
+	}
+
+	grpcAdress := config.AppConfig().GRPCConfig.Address()
+	if grpcAdress == "" {
+		log.Fatal("❌ failed to get grpc from environment")
+	}
+
+	migPath := config.AppConfig().MongoConfig.MigrationPath()
+
+	return dbURI, dbName, grpcAdress, migPath
 }

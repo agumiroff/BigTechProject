@@ -41,6 +41,24 @@ services: # Здесь описываются контейнеры, необхо
       - microservices-net
       # Подключаем контейнер к общей сети всех микросервисов, чтобы они могли взаимодействовать между собой по имени
 
+  # Payment (Go + gRPC)
+  payment:
+    build:
+      context: ../../..                   # Корень проекта (где лежат inventory/ и shared/)
+      dockerfile: payment/Dockerfile    # Dockerfile именно для inventory-сервиса
+    container_name: payment-service
+    env_file:                             # Подключаем .env (Docker сам поднимет эти переменные в окружение)
+      .env
+    volumes:
+      - ../../../payment/migrations:/app/migrations  # чтобы миграции были доступны
+    depends_on:
+      mongo-payment:
+        condition: service_healthy        # inventory поднимется только когда Mongo готова
+    networks:
+      - microservices-net
+    ports:
+      - "50052:50052"                     # gRPC порт (localhost:50051 → контейнер:50051)
+
 volumes: # Раздел с томами — определяем хранилище, которое создаст Docker
   mongo_payment_data:
   # Именованный том, в котором будут храниться данные MongoDB для Inventory-сервиса

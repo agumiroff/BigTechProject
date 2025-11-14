@@ -4,15 +4,17 @@ import (
 	"log"
 	"os"
 
-	"github.com/agumiroff/BigTechProject/inventory/v1/internal/config/env"
 	"github.com/joho/godotenv"
+
+	"github.com/agumiroff/BigTechProject/inventory/v1/internal/config/env"
 )
 
 var appConfig *config
 
 type config struct {
-	GRPCConfig  InventoryConfig
-	MongoConfig MongoConfig
+	GRPC   InventoryConfig
+	Mongo  MongoConfig
+	Logger LoggerConfig
 }
 
 func Load() error {
@@ -31,9 +33,15 @@ func Load() error {
 		return err
 	}
 
+	loggerConfig, err := env.NewLoggerConfig()
+	if err != nil {
+		return err
+	}
+
 	appConfig = &config{
-		GRPCConfig:  grpcConfig,
-		MongoConfig: mongoConfig,
+		GRPC:   grpcConfig,
+		Mongo:  mongoConfig,
+		Logger: loggerConfig,
 	}
 
 	return nil

@@ -5,6 +5,7 @@ WORKDIR /app/payment
 # копируем go.mod/go.sum inventory-сервиса
 COPY payment/go.mod payment/go.sum ./
 COPY shared/ /app/shared
+COPY platform/ /app/platform
 
 RUN go mod download
 

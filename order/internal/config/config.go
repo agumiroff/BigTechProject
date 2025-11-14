@@ -12,8 +12,9 @@ import (
 var appConfig *config
 
 type config struct {
-	HTTPConfig      OrderConfig
-	PostgressConfig PostgressConfig
+	HTTP     OrderConfig
+	Postgres PostgressConfig
+	Logger   LoggerConfig
 }
 
 func Load() error {
@@ -27,14 +28,20 @@ func Load() error {
 		log.Printf("Error loading HTTP config: %v", err)
 	}
 
-	postgressConfig, err := env.NewPostgresConfig()
+	postgresConfig, err := env.NewPostgresConfig()
+	if err != nil {
+		return err
+	}
+
+	loggerConfig, err := env.NewLoggerConfig()
 	if err != nil {
 		return err
 	}
 
 	appConfig = &config{
-		HTTPConfig:      httpConfig,
-		PostgressConfig: postgressConfig,
+		HTTP:     httpConfig,
+		Postgres: postgresConfig,
+		Logger:   loggerConfig,
 	}
 
 	return nil

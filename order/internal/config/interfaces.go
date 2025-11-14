@@ -14,3 +14,8 @@ type PostgressConfig interface {
 	DBName() string
 	MigPath() string
 }
+
+type LoggerConfig interface {
+	Level() string
+	AsJson() bool
+}

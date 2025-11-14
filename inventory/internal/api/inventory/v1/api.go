@@ -1,4 +1,4 @@
-package inventory
+package api
 
 import (
 	"github.com/agumiroff/BigTechProject/inventory/v1/internal/service"

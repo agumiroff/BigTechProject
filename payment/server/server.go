@@ -98,22 +98,22 @@ func StartGRPCServer(ctx context.Context) {
 
 func loadEnv() (string, string, string, string) {
 	config.Load()
-	dbURI := config.AppConfig().MongoConfig.URI()
+	dbURI := config.AppConfig().Mongo.URI()
 	if dbURI == "" {
 		log.Fatal("❌ failed to get MONGO_URI from environment")
 	}
 
-	dbName := config.AppConfig().MongoConfig.DBName()
+	dbName := config.AppConfig().Mongo.DBName()
 	if dbName == "" {
 		log.Fatal("❌ failed to get MONGO_INITDB_DATABASE from environment")
 	}
 
-	grpcAdress := config.AppConfig().GRPCConfig.Address()
+	grpcAdress := config.AppConfig().GRPC.Address()
 	if grpcAdress == "" {
 		log.Fatal("❌ failed to get grpc from environment")
 	}
 
-	migPath := config.AppConfig().MongoConfig.MigrationPath()
+	migPath := config.AppConfig().Mongo.MigrationPath()
 
 	return dbURI, dbName, grpcAdress, migPath
 }

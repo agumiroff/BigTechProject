@@ -9,3 +9,8 @@ type MongoConfig interface {
 	DBName() string
 	MigrationPath() string
 }
+
+type LoggerConfig interface {
+	Level() string
+	AsJson() bool
+}

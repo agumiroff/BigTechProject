@@ -3,14 +3,15 @@ package order
 import (
 	"context"
 	"database/sql"
-	"log"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/converter"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
 	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	ordererrors "github.com/agumiroff/BigTechProject/order/v1/internal/service/errors"
+	"github.com/agumiroff/BigTechProject/platform/pkg/grpc/logger"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 	paymentv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/payment/v1"
 )
@@ -25,7 +26,7 @@ func (s *service) PayOrder(ctx context.Context, req *model.PayOrderRequest) (*mo
 	// Get the order to verify status and get UserUUID
 	order, _, err := s.Repo.GetOrder(ctx, req.OrderUUID)
 	if err != nil {
-		log.Printf("failed to get order #%v\n %v", req.OrderUUID, err)
+		logger.Error(ctx, "failed to get order", zap.String("order_uuid", req.OrderUUID), zap.Error(err))
 		return nil, err
 	}
 
@@ -46,7 +47,7 @@ func (s *service) PayOrder(ctx context.Context, req *model.PayOrderRequest) (*mo
 		},
 	})
 	if err != nil {
-		log.Printf("Failed to pay order %v", err)
+		logger.Error(ctx, "Failed to pay order", zap.Error(err))
 		return nil, err
 	}
 
@@ -62,7 +63,7 @@ func (s *service) PayOrder(ctx context.Context, req *model.PayOrderRequest) (*mo
 	order.Status = string(repomodel.OrderStatusPAID)
 
 	if err = s.Repo.UpdateOrder(ctx, order); err != nil {
-		log.Printf("failed to update order #%v\n %v", req.OrderUUID, err)
+		logger.Error(ctx, "failed to update order", zap.String("order_uuid", req.OrderUUID), zap.Error(err))
 		return nil, err
 	}
 

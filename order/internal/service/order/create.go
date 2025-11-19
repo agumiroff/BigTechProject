@@ -3,17 +3,19 @@ package order
 import (
 	"context"
 	"fmt"
-	"log"
+
+	"go.uber.org/zap"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/converter"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
+	"github.com/agumiroff/BigTechProject/platform/pkg/grpc/logger"
 	inventoryv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
 )
 
 func (s *service) CreateOrder(ctx context.Context, req *model.CreateOrderRequest) (*model.CreateOrderResponse, error) {
 	// Validate request
 	if err := validateCreateOrderRequest(req); err != nil {
-		log.Printf("Invalid create order request: %v", err)
+		logger.Warn(ctx, "Invalid create order request", zap.Error(err))
 		return nil, fmt.Errorf("validation error: %w", err)
 	}
 
@@ -24,14 +26,14 @@ func (s *service) CreateOrder(ctx context.Context, req *model.CreateOrderRequest
 		},
 	})
 	if err != nil {
-		log.Printf("Failed to list parts from inventory: %v", err)
+		logger.Error(ctx, "Failed to list parts from inventory", zap.Error(err))
 		return nil, fmt.Errorf("failed to get parts: %w", err)
 	}
-	log.Printf("list of parts successfully loaded %v", list.Parts)
+	logger.Debug(ctx, "list of parts successfully loaded", zap.Int("parts_count", len(list.Parts)))
 
 	// Validate all parts exist
 	if err = validatePartsExist(req.PartUUIDs, list.Parts); err != nil {
-		log.Printf("parts validation failed: %v", err)
+		logger.Warn(ctx, "parts validation failed", zap.Error(err))
 		return nil, err
 	}
 
@@ -50,11 +52,11 @@ func (s *service) CreateOrder(ctx context.Context, req *model.CreateOrderRequest
 	orderRow := converter.ToRepoOrder(order)
 	id, err := s.Repo.CreateOrder(ctx, orderRow, order.PartUUIDs)
 	if err != nil {
-		log.Printf("Failed to create order in repository: %v", err)
+		logger.Error(ctx, "Failed to create order in repository", zap.Error(err))
 		return nil, fmt.Errorf("failed to create order: %w", err)
 	}
 
-	log.Printf("Order created successfully: uuid=%s, total_price=%.2f", order.OrderUUID, order.TotalPrice)
+	logger.Info(ctx, "Order created successfully", zap.String("order_uuid", order.OrderUUID), zap.Float64("total_price", order.TotalPrice))
 
 	return &model.CreateOrderResponse{
 		OrderUUID:  id,

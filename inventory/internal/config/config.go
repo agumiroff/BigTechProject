@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -19,8 +18,9 @@ type config struct {
 
 func Load() error {
 	err := godotenv.Load()
-	if err != nil && os.IsNotExist(err) {
-		log.Printf("Error loading config %s", err)
+	if err != nil && !os.IsNotExist(err) {
+		// Log actual errors, ignore missing .env
+		return err
 	}
 
 	grpcConfig, err := env.NewGRPCConfig()

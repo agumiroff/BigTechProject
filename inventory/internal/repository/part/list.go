@@ -2,13 +2,14 @@ package repository
 
 import (
 	"context"
-	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.uber.org/zap"
 
 	"github.com/agumiroff/BigTechProject/inventory/v1/internal/model"
 	"github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/converter"
 	repomodel "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/model"
+	"github.com/agumiroff/BigTechProject/platform/pkg/grpc/logger"
 )
 
 func (s *repository) ListParts(ctx context.Context, filter *repomodel.PartsFilter) ([]*model.Part, error) {
@@ -44,7 +45,7 @@ func (s *repository) ListParts(ctx context.Context, filter *repomodel.PartsFilte
 			if err == nil {
 				err = closeErr
 			} else {
-				log.Printf("failed to close cursor: %v", closeErr)
+				logger.Warn(ctx, "failed to close cursor", zap.Error(closeErr))
 			}
 		}
 	}()

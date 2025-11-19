@@ -41,7 +41,7 @@ func NewDIContainer() *diContainer {
 // PostgresDB инициализирует и возвращает PostgreSQL подключение
 func (d *diContainer) PostgresDB(ctx context.Context, dsn string) (*sql.DB, error) {
 	if d.db == nil {
-		database, err := db.ConnectDB(dsn)
+		database, err := db.ConnectDB(ctx, dsn)
 		if err != nil {
 			logger.Error(ctx, "failed to connect to PostgreSQL",
 				zap.Error(err),

@@ -3,7 +3,6 @@ package payment
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
@@ -46,6 +45,5 @@ func (r *repository) PayOrder(ctx context.Context, p *model.Payment) (string, er
 		return "", fmt.Errorf("failed to create payment: %w", err)
 	}
 
-	log.Printf("payment successfully created")
 	return txid, nil
 }

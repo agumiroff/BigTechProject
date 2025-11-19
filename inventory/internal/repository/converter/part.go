@@ -1,15 +1,12 @@
 package converter
 
 import (
-	"log"
-
 	model "github.com/agumiroff/BigTechProject/inventory/v1/internal/model"
 	repomodel "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/model"
 )
 
 func ModelToRepo(m *model.Part) *repomodel.Part {
 	if m == nil {
-		log.Printf("Business model is empty: %v", m)
 		return nil
 	}
 
@@ -40,7 +37,6 @@ func ModelToRepo(m *model.Part) *repomodel.Part {
 
 func RepoToModel(m *repomodel.Part) *model.Part {
 	if m == nil {
-		log.Printf("Repo model is empty :%v", m)
 		return nil
 	}
 

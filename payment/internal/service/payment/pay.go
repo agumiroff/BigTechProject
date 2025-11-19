@@ -2,14 +2,16 @@ package payment
 
 import (
 	"context"
-	"log"
+
+	"go.uber.org/zap"
 
 	"github.com/agumiroff/BigTechProject/payment/v1/internal/model"
 	"github.com/agumiroff/BigTechProject/payment/v1/internal/repository/payment"
+	"github.com/agumiroff/BigTechProject/platform/pkg/grpc/logger"
 )
 
 func (s *service) PayOrder(ctx context.Context, p *model.Payment) (string, error) {
-	if err := validatePayment(p); err != nil {
+	if err := validatePayment(ctx, p); err != nil {
 		return "", err
 	}
 
@@ -21,23 +23,23 @@ func (s *service) PayOrder(ctx context.Context, p *model.Payment) (string, error
 	return res, nil
 }
 
-func validatePayment(p *model.Payment) error {
+func validatePayment(ctx context.Context, p *model.Payment) error {
 	if p == nil {
-		log.Printf("Payment validation failed: payment is nil")
+		logger.Warn(ctx, "Payment validation failed: payment is nil")
 		return payment.ErrPaymentRequired
 	}
 
 	if p.OrderUUID == "" {
-		log.Printf("Payment validation failed: OrderUUID is empty")
+		logger.Warn(ctx, "Payment validation failed: OrderUUID is empty")
 		return payment.ErrOrderUUIDRequired
 	}
 
 	switch p.PaymentMethod {
 	case model.PaymentMethodCard, model.PaymentMethodSBP, model.PaymentMethodCreditCard, model.PaymentMethodInvestMoney:
-		log.Printf("Payment validation successful: Valid payment method: %s", p.PaymentMethod)
+		logger.Debug(ctx, "Payment validation successful", zap.String("payment_method", string(p.PaymentMethod)))
 		return nil
 	default:
-		log.Printf("Payment validation failed: Invalid payment method: %s", p.PaymentMethod)
+		logger.Warn(ctx, "Payment validation failed: Invalid payment method", zap.String("payment_method", string(p.PaymentMethod)))
 		return payment.ErrPaymentMethodInvalid
 	}
 }

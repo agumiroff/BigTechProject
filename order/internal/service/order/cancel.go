@@ -2,10 +2,12 @@ package order
 
 import (
 	"context"
-	"log"
+
+	"go.uber.org/zap"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
 	repoConverter "github.com/agumiroff/BigTechProject/order/v1/internal/repository/converter"
+	"github.com/agumiroff/BigTechProject/platform/pkg/grpc/logger"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
@@ -16,7 +18,7 @@ func (s *service) CancelOrder(ctx context.Context, uuid string) error {
 
 	order, parts, err := s.Repo.GetOrder(ctx, uuid)
 	if err != nil {
-		log.Printf("Order with uuid does not exist %v: %v", uuid, err)
+		logger.Error(ctx, "Order with uuid does not exist", zap.String("uuid", uuid), zap.Error(err))
 		return err
 	}
 
@@ -35,7 +37,7 @@ func (s *service) CancelOrder(ctx context.Context, uuid string) error {
 		return err
 	}
 
-	log.Printf("Order cancelled")
+	logger.Info(ctx, "Order cancelled", zap.String("order_uuid", order.OrderUUID))
 
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 	v1 "github.com/agumiroff/BigTechProject/payment/v1/internal/api/v1"
 	"github.com/agumiroff/BigTechProject/payment/v1/internal/model"
 	repoErrors "github.com/agumiroff/BigTechProject/payment/v1/internal/repository/payment"
+	"github.com/agumiroff/BigTechProject/platform/pkg/grpc/logger"
 	paymentv1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/payment/v1"
 )
 
@@ -33,6 +34,7 @@ func (m *mockService) GetPayment(ctx context.Context, uuid string) (*model.Payme
 
 func TestPayOrder_Success(t *testing.T) {
 	// Arrange
+	logger.SetNopLogger()
 	mockSvc := new(mockService)
 	api := v1.NewAPI(mockSvc)
 
@@ -126,6 +128,7 @@ func TestPayOrder_ValidationErrors(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
+			logger.SetNopLogger()
 			mockSvc := new(mockService)
 			tc.mockFunc(mockSvc)
 			api := v1.NewAPI(mockSvc)

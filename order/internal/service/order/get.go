@@ -2,10 +2,12 @@ package order
 
 import (
 	"context"
-	"log"
+
+	"go.uber.org/zap"
 
 	"github.com/agumiroff/BigTechProject/order/v1/internal/converter"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
+	"github.com/agumiroff/BigTechProject/platform/pkg/grpc/logger"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
@@ -15,7 +17,7 @@ func (s *service) GetOrder(ctx context.Context, uuid string) (*model.Order, erro
 	}
 	order, parts, err := s.Repo.GetOrder(ctx, uuid)
 	if err != nil {
-		log.Printf("failed to get order %v: %v", uuid, err)
+		logger.Error(ctx, "failed to get order", zap.String("uuid", uuid), zap.Error(err))
 		return nil, err
 	}
 

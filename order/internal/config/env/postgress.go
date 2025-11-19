@@ -13,7 +13,7 @@ type postgresEnvConfig struct {
 	Password string `env:"POSTGRES_PASSWORD,required"`
 	DBName   string `env:"POSTGRES_DB,required"`
 	SSLMode  string `env:"POSTGRES_SSLMODE" envDefault:"disable"`
-	MigPath  string `env:"POSTGRES_MIGRATION_PATH", required`
+	MigPath  string `env:"POSTGRES_MIGRATION_PATH" envDefault:""`
 }
 
 type postgresConfig struct {

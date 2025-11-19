@@ -12,10 +12,12 @@ import (
 	"github.com/agumiroff/BigTechProject/order/v1/internal/repository/mocks"
 	repomodel "github.com/agumiroff/BigTechProject/order/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/service/order"
+	"github.com/agumiroff/BigTechProject/platform/pkg/grpc/logger"
 )
 
 func TestCancelOrder_Success(t *testing.T) {
 	// Arrange
+	logger.SetNopLogger()
 	ctx := context.Background()
 	mockRepo := mocks.NewOrderRepository(t)
 	mockExRepo := mockex.NewOrderRepository(t)
@@ -48,6 +50,7 @@ func TestCancelOrder_Success(t *testing.T) {
 
 func TestCancelOrder_OrderNotFound(t *testing.T) {
 	// Arrange
+	logger.SetNopLogger()
 	ctx := context.Background()
 	mockRepo := mocks.NewOrderRepository(t)
 	mockExRepo := mockex.NewOrderRepository(t)
@@ -68,6 +71,7 @@ func TestCancelOrder_OrderNotFound(t *testing.T) {
 
 func TestCancelOrder_DeleteError(t *testing.T) {
 	// Arrange
+	logger.SetNopLogger()
 	ctx := context.Background()
 	mockRepo := mocks.NewOrderRepository(t)
 	mockExRepo := mockex.NewOrderRepository(t)
@@ -100,6 +104,7 @@ func TestCancelOrder_DeleteError(t *testing.T) {
 
 func TestCancelOrder_OrderAlreadyPaid(t *testing.T) {
 	// Arrange
+	logger.SetNopLogger()
 	ctx := context.Background()
 	mockRepo := mocks.NewOrderRepository(t)
 	mockExRepo := mockex.NewOrderRepository(t)

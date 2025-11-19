@@ -97,7 +97,9 @@ func StartGRPCServer(ctx context.Context) {
 }
 
 func loadEnv() (string, string, string, string) {
-	config.Load()
+	if err := config.Load(); err != nil {
+		log.Fatalf("❌ failed to load config: %v", err)
+	}
 	dbURI := config.AppConfig().Mongo.URI()
 	if dbURI == "" {
 		log.Fatal("❌ failed to get MONGO_URI from environment")

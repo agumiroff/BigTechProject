@@ -10,11 +10,13 @@ import (
 	api "github.com/agumiroff/BigTechProject/order/v1/internal/api/v1"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/model"
 	"github.com/agumiroff/BigTechProject/order/v1/internal/service/mocks"
+	"github.com/agumiroff/BigTechProject/platform/pkg/grpc/logger"
 	order_v1 "github.com/agumiroff/BigTechProject/shared/pkg/openapi/v1"
 )
 
 func TestCreateOrder_Success(t *testing.T) {
 	// Arrange
+	logger.SetNopLogger()
 	ctx := context.Background()
 	mockService := mocks.NewOrderService(t)
 	apiHandler := api.NewAPI(mockService)
@@ -47,6 +49,7 @@ func TestCreateOrder_Success(t *testing.T) {
 
 func TestCreateOrder_ServiceError(t *testing.T) {
 	// Arrange
+	logger.SetNopLogger()
 	ctx := context.Background()
 	mockService := mocks.NewOrderService(t)
 	apiHandler := api.NewAPI(mockService)
@@ -75,6 +78,7 @@ func TestCreateOrder_ServiceError(t *testing.T) {
 
 func TestCreateOrder_EmptyRequest(t *testing.T) {
 	// Arrange
+	logger.SetNopLogger()
 	ctx := context.Background()
 	mockService := mocks.NewOrderService(t)
 	apiHandler := api.NewAPI(mockService)

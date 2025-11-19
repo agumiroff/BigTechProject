@@ -2,9 +2,11 @@ package api
 
 import (
 	"context"
-	"log"
+
+	"go.uber.org/zap"
 
 	"github.com/agumiroff/BigTechProject/inventory/v1/internal/converter"
+	"github.com/agumiroff/BigTechProject/platform/pkg/grpc/logger"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 	invV1 "github.com/agumiroff/BigTechProject/shared/pkg/proto/inventory/v1"
 )
@@ -17,7 +19,7 @@ func (a *api) ListParts(ctx context.Context, req *invV1.ListPartsRequest) (*invV
 
 	list, err := a.service.ListParts(ctx, converter.ToFilterModel(filter))
 	if err != nil {
-		log.Printf("failed to list parts %v", err)
+		logger.Error(ctx, "failed to list parts", zap.Error(err))
 		return &invV1.ListPartsResponse{
 			Parts: []*invV1.Part{},
 		}, apperrors.Map(err)

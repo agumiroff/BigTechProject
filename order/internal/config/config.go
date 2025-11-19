@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -19,13 +18,14 @@ type config struct {
 
 func Load() error {
 	err := godotenv.Load()
-	if err != nil && os.IsNotExist(err) {
-		log.Printf("Error loading config %s", err)
+	if err != nil && !os.IsNotExist(err) {
+		// Log actual errors, ignore missing .env
+		return err
 	}
 
 	httpConfig, err := env.NewHTTPConfig()
 	if err != nil {
-		log.Printf("Error loading HTTP config: %v", err)
+		return err
 	}
 
 	postgresConfig, err := env.NewPostgresConfig()

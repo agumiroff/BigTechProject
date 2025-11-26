@@ -84,8 +84,19 @@ message ListPartsResponse {
   repeated Part parts = 1;  // Список найденных деталей
 }
 
+// Структура для запроса CreatePart
+message CreatePartRequest {
+  Part part = 1;  // структура детали
+}
+
+// Структура для ответа ListParts
+message CreatePartResponse {
+  string uuid = 1;  // uuid созданной детали
+}
+
 // Сервис InventoryService
 service InventoryService {
   rpc GetPart (GetPartRequest) returns (GetPartResponse);
   rpc ListParts (ListPartsRequest) returns (ListPartsResponse);
+  rpc CreatePart(CreatePartRequest) returns (CreatePartResponse);
 }

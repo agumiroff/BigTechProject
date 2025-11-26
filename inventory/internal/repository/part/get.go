@@ -8,11 +8,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/agumiroff/BigTechProject/inventory/v1/internal/model"
+	"github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/converter"
+	repomodel "github.com/agumiroff/BigTechProject/inventory/v1/internal/repository/model"
 	"github.com/agumiroff/BigTechProject/shared/apperrors"
 )
 
 func (r *repository) GetPart(ctx context.Context, uuid string) (*model.Part, error) {
-	var part model.Part
+	var part repomodel.Part
 	err := r.collection.FindOne(ctx, bson.M{"uuid": uuid}).Decode(&part)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -21,5 +23,7 @@ func (r *repository) GetPart(ctx context.Context, uuid string) (*model.Part, err
 		return nil, err
 	}
 
-	return &part, nil
+	m := converter.RepoToModel(&part)
+
+	return m, nil
 }

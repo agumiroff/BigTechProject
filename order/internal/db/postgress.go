@@ -10,7 +10,7 @@ import (
 
 func ConnectDB(ctx context.Context, uri string) (*sql.DB, error) {
 	if uri == "" {
-		return nil, fmt.Errorf("env variable POSTGRESS_URI is empty")
+		return nil, fmt.Errorf("env variable POSTGRES_URI is empty")
 	}
 
 	db, err := sql.Open("pgx", uri)

@@ -10,4 +10,5 @@ import (
 type InvRepository interface {
 	GetPart(ctx context.Context, uuid string) (res *model.Part, err error)
 	ListParts(ctx context.Context, filter *repomodel.PartsFilter) ([]*model.Part, error)
+	CreatePart(ctx context.Context, part *model.Part) (string, error)
 }

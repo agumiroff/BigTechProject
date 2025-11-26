@@ -15,6 +15,11 @@ import (
 func main() {
 	ctx := context.Background()
 
+	// Инициализируем логгер до всего остального, чтобы можно было логировать ошибки
+	if err := logger.Init("info", true); err != nil {
+		panic("failed to init logger: " + err.Error())
+	}
+
 	// Конфигурируем closer для graceful shutdown
 	closer.Configure(syscall.SIGTERM, os.Interrupt)
 

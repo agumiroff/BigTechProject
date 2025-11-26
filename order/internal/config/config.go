@@ -12,7 +12,7 @@ var appConfig *config
 
 type config struct {
 	HTTP     OrderConfig
-	Postgres PostgressConfig
+	Postgres PostgresConfig
 	Logger   LoggerConfig
 }
 

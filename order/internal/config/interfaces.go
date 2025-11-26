@@ -9,7 +9,7 @@ type OrderConfig interface {
 	PaymentAddr() string
 }
 
-type PostgressConfig interface {
+type PostgresConfig interface {
 	DSN() string
 	DBName() string
 	MigPath() string
